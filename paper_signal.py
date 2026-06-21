@@ -108,8 +108,12 @@ def check_signals(df, params):
     rsi = compute_rsi(close)
     
     # Volume filter
+    if len(volume) < 2:
+        return [], {"price": round(float(close.iloc[-1]), 4), "atr": 0, "adx": 0}
     vol_ma = volume.rolling(20).mean()
-    vol_ok = volume.iloc[-1] > vol_ma.iloc[-1] * params.get("vol_min", 1.0)
+    vol_a = volume.iloc[-1] if len(volume) > 0 else 0
+    vol_ma_last = vol_ma.iloc[-1] if len(vol_ma.dropna()) > 0 else vol_a
+    vol_ok = vol_a > vol_ma_last * params.get("vol_min", 1.0)
     
     # Regime (simplified)
     is_high_vol = atr.iloc[-1] > atr.rolling(100).mean().iloc[-1] * 1.3
