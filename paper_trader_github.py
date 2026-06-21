@@ -58,44 +58,56 @@ def fetch_klines(symbol, interval, limit=300):
 # ══════════════════════════════════════════════════════════════════════
 # Indicators (match backtest engine naming: ema20, atr14, etc.)
 # ══════════════════════════════════════════════════════════════════════
-def _ema(s, n): return s.ewm(span=n, adjust=False).mean()
-def _sma(s, n): return s.rolling(n).mean()
+def _ema(s, n): return s.ewm(span=n, adjust=False, min_periods=n).mean()
+def _sma(s, n): return s.rolling(n, min_periods=n).mean()
+def _wilder(s, n): return s.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
 
 def compute_indicators(df):
-    """Compute all indicators the backtest engine uses, stored as columns."""
+    """Compute columns to match src.indicators.add_indicators() + research_engine.enrich_features()."""
     c, h, l = df["close"], df["high"], df["low"]
-    # EMAs
+    # EMAs — add_indicators + enrich_features
+    df["ema10"] = _ema(c, 10)
     df["ema20"] = _ema(c, 20)
     df["ema50"] = _ema(c, 50)
     df["ema100"] = _ema(c, 100)
     df["ema200"] = _ema(c, 200)
-    # ATR
+    # ATR 14 — Wilder smoothing, same as src.indicators
     tr = pd.concat([h-l, (h-c.shift()).abs(), (l-c.shift()).abs()], axis=1).max(axis=1)
-    df["atr14"] = tr.ewm(span=14, adjust=False).mean()
-    # MACD
-    e_f, e_s = _ema(c, 12), _ema(c, 26)
-    macd = e_f - e_s
-    sig = _ema(macd, 9)
-    df["macd_hist"] = macd - sig
-    # RSI
+    df["atr14"] = _wilder(tr, 14)
+    # ATR percentile — same window/min_periods as src.indicators
+    df["atr_pct"] = df["atr14"].rolling(200, min_periods=50).rank(pct=True) * 100
+    # Realized volatility percentile — regime gate uses rv_pct, not atr_pct
+    ret = c.pct_change()
+    df["rv"] = ret.rolling(24, min_periods=24).std()
+    df["rv_pct"] = df["rv"].rolling(300, min_periods=100).rank(pct=True) * 100
+    # MACD — same min_periods as research_engine.enrich_features
+    ema12 = c.ewm(span=12, adjust=False, min_periods=12).mean()
+    ema26 = c.ewm(span=26, adjust=False, min_periods=26).mean()
+    df["macd"] = ema12 - ema26
+    df["macd_signal"] = df["macd"].ewm(span=9, adjust=False, min_periods=9).mean()
+    df["macd_hist"] = df["macd"] - df["macd_signal"]
+    # RSI — Wilder smoothing, same as src.indicators
     delta = c.diff()
-    gain = delta.clip(lower=0).rolling(14).mean()
-    loss = (-delta.clip(upper=0)).rolling(14).mean()
-    rs = gain / loss
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = _wilder(gain, 14)
+    avg_loss = _wilder(loss, 14)
+    rs = avg_gain / avg_loss.replace(0, np.nan)
     df["rsi14"] = 100 - (100 / (1 + rs))
-    # ADX
-    pdm = h.diff().clip(lower=0); ndm = (-l.diff()).clip(lower=0)
-    atr14 = df["atr14"]
-    pdi = 100 * _ema(pdm, 14) / atr14; ndi = 100 * _ema(ndm, 14) / atr14
-    df["adx14"] = _ema((pdi - ndi).abs() / (pdi + ndi) * 100, 14)
+    # ADX — same Wilder method as src.indicators.add_adx
+    up = h.diff(); down = -l.diff()
+    plus_dm = np.where((up > down) & (up > 0), up, 0.0)
+    minus_dm = np.where((down > up) & (down > 0), down, 0.0)
+    plus_di = 100 * _wilder(pd.Series(plus_dm, index=df.index), 14) / df["atr14"]
+    minus_di = 100 * _wilder(pd.Series(minus_dm, index=df.index), 14) / df["atr14"]
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    df["adx14"] = _wilder(dx, 14)
     # Volume ratio
-    df["volume_ratio"] = df["volume"] / _sma(df["volume"], 20)
-    # ATR percentile (for regime)
-    df["atr_pct"] = df["atr14"].rolling(100).apply(lambda x: (x.iloc[-1] < x).mean() * 100, raw=False)
-    # Swing highs/lows (lookback window)
-    lookback = 48
-    df["swing_high"] = h.rolling(lookback, min_periods=1).max()
-    df["swing_low"]  = l.rolling(lookback, min_periods=1).min()
+    df["vol_ma20"] = _sma(df["volume"], 20)
+    df["volume_ratio"] = df["volume"] / df["vol_ma20"]
+    # Recent swing levels — shifted to avoid lookahead, exactly like src.indicators
+    df["recent_swing_high"] = h.rolling(20, min_periods=20).max().shift(1)
+    df["recent_swing_low"] = l.rolling(20, min_periods=20).min().shift(1)
     return df
 
 # ══════════════════════════════════════════════════════════════════════
@@ -127,19 +139,18 @@ def direction_allowed(row, side, direction_filter):
         return (side == "LONG" and safe_float(row["ema20"]) > safe_float(row["ema50"]) > safe_float(row["ema200"])) or \
                (side == "SHORT" and safe_float(row["ema20"]) < safe_float(row["ema50"]) < safe_float(row["ema200"]))
     if direction_filter == "ema_fast_stack":
-        return (side == "LONG" and safe_float(row["ema20"]) > safe_float(row["ema50"])) or \
-               (side == "SHORT" and safe_float(row["ema20"]) < safe_float(row["ema50"]))
+        return (side == "LONG" and safe_float(row["ema10"]) > safe_float(row["ema20"]) > safe_float(row["ema50"])) or \
+               (side == "SHORT" and safe_float(row["ema10"]) < safe_float(row["ema20"]) < safe_float(row["ema50"]))
     if direction_filter == "price_ema100":
         return (side == "LONG" and row["close"] > safe_float(row["ema100"])) or \
                (side == "SHORT" and row["close"] < safe_float(row["ema100"]))
+    if direction_filter == "supertrend":
+        d = safe_float(row.get("supertrend_dir"), 0)
+        return d > 0 if side == "LONG" else d < 0
     if direction_filter == "mtf_trend":
-        # Multi-timeframe trend: use EMA20/EMA50/EMA100 alignment
-        ema20_v = safe_float(row["ema20"]); ema50_v = safe_float(row["ema50"])
-        ema100_v = safe_float(row["ema100"])
-        trend_up = ema20_v > ema50_v > ema100_v
-        trend_dn = ema20_v < ema50_v < ema100_v
-        return (side == "LONG" and trend_up) or (side == "SHORT" and trend_dn)
-    return True
+        t = safe_float(row.get("htf_trend"), 0)
+        return t > 0 if side == "LONG" else t < 0
+    return False
 
 def confirmation_ok(row, exp):
     """Match backtest engine's confirmation_ok() — volume, ATR%, ADX, regime."""
@@ -161,7 +172,7 @@ def confirmation_ok(row, exp):
 
     regime = exp.get("regime", "any")
     if regime and regime != "any":
-        rv_pct = safe_float(row.get("atr_pct", 50), 50)
+        rv_pct = safe_float(row.get("rv_pct"), 50)
         if not math.isfinite(rv_pct):
             return False
         if regime == "low_vol" and rv_pct > 50:
@@ -204,7 +215,7 @@ def make_stop_take(row, side, entry, exp):
 
     if side == "LONG":
         atr_stop = entry - atr_mult * atr
-        swing_stop = safe_float(row.get("swing_low"), entry)
+        swing_stop = safe_float(row.get("recent_swing_low"), entry)
 
         if stop_rule == "atr":
             stop = atr_stop
@@ -222,7 +233,7 @@ def make_stop_take(row, side, entry, exp):
 
     # SHORT
     atr_stop = entry + atr_mult * atr
-    swing_stop = safe_float(row.get("swing_high"), entry)
+    swing_stop = safe_float(row.get("recent_swing_high"), entry)
 
     if stop_rule == "atr":
         stop = atr_stop
@@ -252,7 +263,7 @@ def get_signals(df, exp):
 
     # Market snapshot for logging
     snap = {
-        "regime": "low_vol" if safe_float(row.get("atr_pct",50)) <= 50 else "high_vol",
+        "regime": "low_vol" if safe_float(row.get("rv_pct",50)) <= 50 else "high_vol",
         "adx": round(safe_float(row.get("adx14")), 1),
         "atr": round(safe_float(row["atr14"]), 4),
         "atr_ratio": 0,  # unused now, keeping for compat
@@ -500,7 +511,7 @@ def main():
             "breakeven_activated": False, "breakeven_r": s.get("breakeven_r"),
             "entry_time": now.isoformat(),
             "entry_bar_time": str(df.index[-1]),
-            "entry_regime": "low_vol" if safe_float(row.get("atr_pct",50)) <= 50 else "high_vol",
+            "entry_regime": "low_vol" if safe_float(row.get("rv_pct",50)) <= 50 else "high_vol",
             "entry_adx": round(safe_float(row.get("adx14")), 1),
             "entry_atr": round(safe_float(row["atr14"]), 4),
             "entry_vol_ratio": round(safe_float(row.get("volume_ratio",1)), 2),

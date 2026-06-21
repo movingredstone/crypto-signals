@@ -1,119 +1,152 @@
 # Crypto Paper Trading System — Handoff for Verification
 
 ## What This Is
-A $330 paper trading system running on GitHub Actions, executing 3 backtest-verified crypto futures strategies. Every 4 hours: fetch Binance data → check positions → check signals → Telegram report → commit state.
+A $330 paper trading system running on GitHub Actions, executing 3 backtest-selected crypto futures strategies. Every 4 hours: fetch Binance data → compute indicators → check positions → check signals → Telegram report → commit state.
 
 **Repo:** https://github.com/movingredstone/crypto-signals
 **Local:** ~/Desktop/hermes/investmentsystem
 
-## Current State (2026-06-21)
+## Current State
 - Deployed and operational. Telegram reports working.
 - No trades yet. No open positions. Balance: $330.00
-- **v3**: Signal logic now matched to backtest engine (research_engine.py)
+- Current implementation: `paper_trader_github.py`
+- Legacy simple checker: `paper_signal.py` is NOT used.
 
-## Architecture: How Signals Match the Backtest Engine
-The standalone `paper_trader_github.py` implements the SAME functions as the backtest engine (`src/research_engine.py`):
+## Important Clarification
+The trained/backtested DATA is not copied into the algorithm. What must be copied is:
+1. The selected strategy family
+2. The selected interval
+3. The selected parameter set
+4. The exact entry/confirmation/direction/stop/take-profit logic from the backtest engine
 
-| Function | Backtest Engine | Standalone |
-|----------|----------------|------------|
-| `near()` | `abs(value-target)/abs(value) <= tolerance_pct` | Same |
-| `direction_allowed()` | Checks ema200/ema_stack/ema_fast_stack/price_ema100/mtf_trend | Same |
-| `confirmation_ok()` | Volume min, ATR% range, ADX min, regime (rv_pct percentile) | Same |
-| `check_entry()` | Family-specific entry condition | Same |
-| `make_stop_take()` | ATR-based or swing-based stop + TP=R×risk | Same |
+So the verification question is: “Did the live paper trader implement the selected strategies and the backtest engine logic exactly?”
 
-### Key Design: Separated Concerns
-The backtest engine separates 4 independent checks per signal:
-1. **confirmation_ok()** — volume, ATR%, ADX strength, regime filter
-2. **direction_allowed()** — trend direction via EMA relationships
-3. **check_entry()** — the actual entry trigger (family-specific)
-4. **make_stop_take()** — stop loss placement (ATR or swing-based)
+## Source of Truth
+- Strategy templates:
+  - DOGE: `btc-optimization-pipeline/references/doge-strategy-template.md`
+  - SUI: `btc-optimization-pipeline/references/sui-strategy-template.md`
+  - AVAX: `btc-optimization-pipeline/references/avax-strategy-template.md`
+- Backtest logic: `src/research_engine.py`
+- Indicator logic: `src/indicators.py`
 
-The standalone implements all 4 identically.
+If original optimization CSV/stress CSV is available, extract `params_json` directly from that CSV and compare against `STRATEGIES`. If CSV is not available, use the templates above as current source of truth.
 
-## 3 Strategies (Backtest-Verified Parameters)
+## 3 Strategy Parameters
 
-### DOGE macd_momentum/8h
-- Allocation: $110 | Risk: 5% ($5.50) | Price: ~$0.08
-- Backtest: PF=1.99, WR=67%, WF=3/3, 60 trades, MDD=-0.90%
-- Params: family=macd_momentum, direction_filter=price_ema100, lookback=48, volume_min=1.2, atr_stop_mult=2.0, take_profit_r=3.0, max_holding_bars=12, stop_rule=swing, adx_min=20, regime=low_vol, breakeven_r=1.0, tolerance_pct=0.006
+### DOGEUSDT macd_momentum/8h
+- allocation: 110
+- risk: 5%
+- direction_filter: price_ema100
+- lookback: 48
+- volume_min: 1.2
+- atr_stop_mult: 2.0
+- take_profit_r: 3.0
+- max_holding_bars: 12
+- stop_rule: swing
+- adx_min: 20
+- regime: low_vol
+- breakeven_r: 1.0
+- partial_tp_r: 1.0
+- partial_tp_frac: 0.5
 
-### SUI macd_momentum/4h
-- Allocation: $110 | Risk: 5% ($5.50) | Price: ~$0.90
-- Backtest: PF=2.54, WR=48%, WF=2/3, 52 trades, MDD=-2.59%
-- Params: family=macd_momentum, direction_filter=ema_fast_stack, lookback=48, volume_min=2.0, atr_stop_mult=3.0, take_profit_r=4.0, max_holding_bars=24, stop_rule=swing, adx_min=20, regime=any, tolerance_pct=0.006
+### SUIUSDT macd_momentum/4h
+- allocation: 110
+- risk: 5%
+- direction_filter: ema_fast_stack
+- lookback: 48
+- volume_min: 2.0
+- atr_stop_mult: 3.0
+- take_profit_r: 4.0
+- max_holding_bars: 24
+- stop_rule: swing
+- adx_min: 20
+- regime: any
+- partial_tp_r: 1.0
+- partial_tp_frac: 0.5
 
-### AVAX trend_pullback/8h
-- Allocation: $110 | Risk: 5% ($5.50) | Price: ~$6.23
-- Backtest: PF=1.90, WR=45%, WF=3/3, 7/7 stress folds, 40 trades
-- Params: family=trend_pullback, direction_filter=price_ema100, lookback=48, volume_min=1.2, atr_stop_mult=2.0, take_profit_r=5.0, max_holding_bars=12, stop_rule=swing, adx_min=0, regime=low_vol, pullback_ref=ema20, tolerance_pct=0.006
+### AVAXUSDT trend_pullback/8h
+- allocation: 110
+- risk: 5%
+- direction_filter: price_ema100
+- lookback: 48
+- volume_min: 1.2
+- atr_stop_mult: 2.0
+- take_profit_r: 5.0
+- max_holding_bars: 12
+- stop_rule: swing
+- adx_min: 0
+- regime: low_vol
+- pullback_ref: ema20
+- partial_tp_frac: 0.5
+- tolerance_pct: 0.006
 
-## MACD Momentum Entry Logic (exact backtest match)
-```python
-# Backtest engine (research_engine.py line 378-381):
-if family == "macd_momentum":
-    if side == "LONG":
-        return row["macd_hist"] > 0 and row["macd_hist"] > prev["macd_hist"]
-    return row["macd_hist"] < 0 and row["macd_hist"] < prev["macd_hist"]
-```
-LONG = histogram is positive AND increasing (continued momentum, not reversal).
-SHORT = histogram is negative AND decreasing.
+## Backtest Logic That Must Match
 
-## Trend Pullback Entry Logic (exact backtest match)
-```python
-# Backtest engine (research_engine.py line 342-344):
-if family == "trend_pullback":
-    target = safe_float(row[exp.get("pullback_ref", "ema20")])
-    return near(close, target, tol)
-```
-Just checks: is price within `tolerance_pct` (0.6%) of the reference EMA?
-Direction filter (ema100, ema_stack, etc.) and confirmation (volume, ADX, regime) are checked separately.
+### Direction Filter: `research_engine.direction_allowed()`
+Relevant lines: `src/research_engine.py:292-326`
+- `ema_fast_stack` means:
+  - LONG: `ema10 > ema20 > ema50`
+  - SHORT: `ema10 < ema20 < ema50`
+- `price_ema100` means:
+  - LONG: `close > ema100`
+  - SHORT: `close < ema100`
 
-## Stop Placement (exact backtest match)
-```python
-# stop_rule="swing": uses swing_low/swing_high (lowest/highest over lookback window)
-# stop_rule="atr": uses entry ± atr_stop_mult × ATR
-# All 3 strategies use stop_rule="swing"
-```
+### Entry Trigger: `research_engine.entry_trigger()`
+Relevant lines: `src/research_engine.py:329-422`
+- `macd_momentum`:
+  - LONG: `macd_hist > 0 and macd_hist > prev_macd_hist`
+  - SHORT: `macd_hist < 0 and macd_hist < prev_macd_hist`
+- `trend_pullback`:
+  - `near(close, row[pullback_ref], tolerance_pct)`
 
-## Position Sizing
-```
-position_notional = allocation × risk_pct / (stop_distance / entry)
-```
-Where stop_distance = |entry - stop|. Risk is ALWAYS exactly risk_pct × allocation in dollars.
+### Confirmation: `research_engine.confirmation_ok()`
+Relevant lines: `src/research_engine.py:441-481`
+- `volume_ratio >= volume_min`
+- `atr_pct` within optional min/max
+- `adx14 >= adx_min` if adx_min > 0
+- Regime uses `rv_pct`, not `atr_pct`:
+  - low_vol: `rv_pct <= 50`
+  - high_vol: `rv_pct >= 50`
+
+### Stop/Take: `research_engine.make_stop_take()`
+Relevant lines: `src/research_engine.py:484-530`
+- `stop_rule='swing'`:
+  - LONG stop: `recent_swing_low`
+  - SHORT stop: `recent_swing_high`
+- TP uses actual risk distance:
+  - LONG: `entry + take_profit_r * (entry - stop)`
+  - SHORT: `entry - take_profit_r * (stop - entry)`
+
+## Indicator Columns That Must Exist
+From `src/indicators.py` and `research_engine.enrich_features()`:
+- ema10, ema20, ema50, ema100, ema200
+- atr14 with Wilder smoothing
+- atr_pct
+- rv_pct with rolling realized volatility percentile
+- macd_hist with min_periods
+- rsi14 with Wilder smoothing
+- adx14 with Wilder smoothing
+- volume_ratio
+- recent_swing_high / recent_swing_low shifted by one bar to avoid lookahead
 
 ## Data Recorded
-- `paper_trades.csv`: Every closed trade with entry/exit, regime, ADX, ATR, volume context
-- `paper_state.json`: Full state (balance, positions, signal_log, equity_curve, closed_trades)
-- `signal_log`: ALL signals (taken + skipped) with market context
-- `equity_curve`: Daily balance snapshots
+- `paper_state.json`: balance, positions, closed_trades, signal_log, equity_curve
+- `paper_trades.csv`: closed trades, one row per trade
+- Telegram report each run
 
-## Files
-- `paper_trader_github.py` — Main trader (v3, backtest-matched)
-- `.github/workflows/signal.yml` — 4-hourly schedule
-- `paper_state.json` — Portfolio state (auto-committed)
-- `paper_trades.csv` — Trade log (auto-committed)
-- `requirements_paper.txt` — pandas, numpy, requests
-- `HANDOFF.md` — This file
+## Known Verification Notes
+- The old v2 implementation had real mismatches: MACD crossover, ATR-only stop, ATR-ratio regime, simplified ema_fast_stack.
+- Current code was patched to use:
+  - `ema10 > ema20 > ema50` for ema_fast_stack
+  - `rv_pct` for regime
+  - `recent_swing_low/high` shifted by one bar
+  - Wilder ATR/RSI/ADX style smoothing
+- Still verify independently.
 
-## How to Test
-```bash
-cd ~/Desktop/hermes/investmentsystem
-git pull
-TELEGRAM_TOKEN=*** TELEGRAM_CHAT_ID=test python3 paper_trader_github.py
-```
+## Known Missing/Needs Review
+- Partial take-profit parameters exist, but verify whether current live fill simulation fully implements partial exits. If not, mark as missing.
+- Slippage/fees may not be fully modeled in the GitHub paper trader. If absent, paper returns may be optimistic.
+- Original stress CSV/result CSV is not present in repo; if needed, request it and compare `params_json` directly.
 
-## Verification: Known Checked Differences (v2→v3)
-v2 had standalone implementations that differed from backtest. v3 fixes all:
-- ✅ MACD: was "crossover" logic, now matches "hist > 0 and increasing"
-- ✅ Stops: was ATR-only, now uses swing_low/swing_high (stop_rule=swing)
-- ✅ Regime: was ATR-ratio, now uses ATR percentile (atr_pct)
-- ✅ Trend pullback entry: was trend+pullback combined, now matches near() check
-- ✅ Direction filter: was simplified, now matches all 6 filter types
-
-## Verification Task for New Model
-1. Verify strategy PARAMETERS match the backtest templates exactly
-2. Verify signal LOGIC in check_entry(), direction_allowed(), confirmation_ok(), make_stop_take()
-3. Verify the GITHUB ACTIONS WORKFLOW has correct permissions and schedule
-4. Check for any unreported discrepancies
-5. Report findings and recommended fixes
+## Independent Verification Prompt
+See `VERIFY_PROMPT.md` in this repo.
