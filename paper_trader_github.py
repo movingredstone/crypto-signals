@@ -16,6 +16,12 @@ STATE_FILE = "paper_state.json"
 TRADE_LOG_CSV = "paper_trades.csv"
 TOTAL_ALLOC = 330.0
 RISK_PER_TRADE = 0.05
+FEE_RATE = 0.0005        # config.yaml fees.taker
+DEFAULT_SLIPPAGE = 0.0004 # config.yaml slippage.default
+SLIPPAGE_BY_SYMBOL = {"BTCUSDT": 0.0002, "ETHUSDT": 0.0003}
+
+def slippage_rate(symbol):
+    return SLIPPAGE_BY_SYMBOL.get(symbol, DEFAULT_SLIPPAGE)
 
 STRATEGIES = [
     {"name":"DOGE macd_momentum/8h","symbol":"DOGEUSDT","interval":"8h","alloc":110.0,
@@ -38,7 +44,7 @@ STRATEGIES = [
 # ══════════════════════════════════════════════════════════════════════
 # Data Fetching
 # ══════════════════════════════════════════════════════════════════════
-def fetch_klines(symbol, interval, limit=300):
+def fetch_klines(symbol, interval, limit=500):
     url = f"{BINANCE_BASE}/fapi/v1/klines"
     resp = requests.get(url, params={"symbol":symbol,"interval":interval,"limit":limit}, timeout=15)
     resp.raise_for_status()
@@ -255,19 +261,24 @@ def get_signals(df, exp):
     if "ema20" not in df.columns:
         df = compute_indicators(df)
 
-    if len(df) < 3:
+    # Need previous closed bar for signal and current bar open for entry.
+    # Backtest: signal at i, entry at i+1 open. Binance latest candle is treated as i+1.
+    if len(df) < 4:
         return [], {}
 
-    row = df.iloc[-1]
-    prev_row = df.iloc[-2]
+    row = df.iloc[-2]       # signal bar (last closed / previous bar)
+    prev_row = df.iloc[-3]
+    entry_row = df.iloc[-1] # entry bar
 
-    # Market snapshot for logging
+    # Market snapshot for logging — based on signal bar, matching backtest decision time.
     snap = {
         "regime": "low_vol" if safe_float(row.get("rv_pct",50)) <= 50 else "high_vol",
         "adx": round(safe_float(row.get("adx14")), 1),
         "atr": round(safe_float(row["atr14"]), 4),
         "atr_ratio": 0,  # unused now, keeping for compat
         "price": round(float(row["close"]), 4),
+        "entry_bar_time": str(entry_row.name),
+        "signal_bar_time": str(row.name),
         "volume_ratio": round(safe_float(row.get("volume_ratio", 1)), 2),
     }
 
@@ -277,6 +288,8 @@ def get_signals(df, exp):
 
     dfilter = exp.get("direction_filter", "none")
     signals = []
+    slip = slippage_rate(exp["symbol"])
+    raw_entry = safe_float(entry_row["open"])
 
     for side in ["LONG", "SHORT"]:
         if not direction_allowed(row, side, dfilter):
@@ -284,10 +297,14 @@ def get_signals(df, exp):
         if not check_entry(row, prev_row, side, exp, df):
             continue
 
-        entry = round(float(row["close"]), 4)
+        entry = raw_entry * (1 + slip) if side == "LONG" else raw_entry * (1 - slip)
         stop, take = make_stop_take(row, side, entry, exp)
         if stop is not None and take is not None:
-            signals.append({"side": side, "entry": entry, "stop": stop, "take": take})
+            signals.append({
+                "side": side, "entry": round(entry, 8), "raw_entry": round(raw_entry, 8),
+                "stop": round(stop, 8), "take": round(take, 8),
+                "entry_bar_time": str(entry_row.name), "signal_bar_time": str(row.name),
+            })
 
     return signals, snap
 
@@ -349,8 +366,8 @@ def size_position(alloc, risk_pct, entry, stop):
 # ══════════════════════════════════════════════════════════════════════
 TRADE_CSV_FIELDS = [
     "exit_time","strategy","symbol","side","entry","exit","exit_reason",
-    "pnl","pnl_pct","bars_held","entry_time","regime","adx_entry","atr_entry",
-    "volume_ratio","alloc","notional","risk_dollar",
+    "pnl","gross_pnl","fee","slippage_cost","pnl_pct","bars_held","entry_time","regime","adx_entry","atr_entry",
+    "volume_ratio","alloc","notional","risk_dollar","fills",
 ]
 
 def append_trade_csv(trade):
@@ -364,6 +381,95 @@ def append_trade_csv(trade):
 # ══════════════════════════════════════════════════════════════════════
 # Check Open Positions
 # ══════════════════════════════════════════════════════════════════════
+def _records_from_df(df):
+    d = df.reset_index().copy()
+    if "open_time" not in d.columns:
+        d = d.rename(columns={d.columns[0]: "open_time"})
+    return d.to_dict("records")
+
+def _entry_index(records, entry_bar_time):
+    target = pd.Timestamp(entry_bar_time)
+    for i, rec in enumerate(records):
+        if pd.Timestamp(rec["open_time"]) == target:
+            return i
+    return None
+
+def simulate_live_fills(records, entry_i, side, entry, stop, take, exp, current_i):
+    """Prefix-equivalent of research_engine.simulate_fills().
+    Same intrabar order: stop -> partial TP -> final TP -> breakeven -> trailing.
+    Unlike backtest, no time_exit until max_holding_bars is actually reached.
+    """
+    max_holding = exp.get("max_holding_bars", 72)
+    end_i = min(current_i, entry_i + max_holding)
+    risk = abs(entry - stop)
+    if risk <= 0:
+        return [(1.0, entry, "invalid", entry_i)]
+
+    trail_mult = exp.get("trailing_atr_mult")
+    be_r = exp.get("breakeven_r")
+    ptp_r = exp.get("partial_tp_r")
+    ptp_frac = float(exp.get("partial_tp_frac", 0.5))
+    long = side == "LONG"
+    cur_stop = stop
+    remaining = 1.0
+    partial_done = False
+    fills = []
+
+    for j in range(entry_i, end_i + 1):
+        rec = records[j]
+        high = safe_float(rec["high"])
+        low = safe_float(rec["low"])
+        atr_j = safe_float(rec.get("atr14"))
+
+        if long and low <= cur_stop:
+            fills.append((remaining, cur_stop, "stop_loss", j)); remaining = 0.0; break
+        if (not long) and high >= cur_stop:
+            fills.append((remaining, cur_stop, "stop_loss", j)); remaining = 0.0; break
+
+        if (not partial_done) and ptp_r is not None:
+            ptp_level = entry + ptp_r * risk if long else entry - ptp_r * risk
+            hit = high >= ptp_level if long else low <= ptp_level
+            if hit:
+                frac = min(ptp_frac, remaining)
+                fills.append((frac, ptp_level, "partial_tp", j))
+                remaining -= frac
+                partial_done = True
+                cur_stop = max(cur_stop, entry) if long else min(cur_stop, entry)
+                if remaining <= 1e-9:
+                    break
+
+        tp_hit = high >= take if long else low <= take
+        if tp_hit:
+            fills.append((remaining, take, "take_profit", j)); remaining = 0.0; break
+
+        if be_r is not None:
+            be_level = entry + be_r * risk if long else entry - be_r * risk
+            reached = high >= be_level if long else low <= be_level
+            if reached:
+                cur_stop = max(cur_stop, entry) if long else min(cur_stop, entry)
+
+        if trail_mult is not None and math.isfinite(atr_j) and atr_j > 0:
+            cur_stop = max(cur_stop, high - trail_mult * atr_j) if long else min(cur_stop, low + trail_mult * atr_j)
+
+    if remaining > 1e-9 and current_i >= entry_i + max_holding:
+        fills.append((remaining, safe_float(records[end_i]["close"]), "time_exit", end_i))
+    return fills
+
+def _net_pnl_from_fills(pos, fills):
+    entry = float(pos["entry"]); notional = float(pos.get("notional", pos["alloc"]))
+    qty = notional / entry
+    slip = float(pos.get("slippage_rate", slippage_rate(pos["symbol"])))
+    gross = 0.0
+    for frac, raw_price, _reason, _bar in fills:
+        if pos["side"] == "LONG":
+            exit_price = raw_price * (1 - slip)
+            gross += (exit_price - entry) * qty * frac
+        else:
+            exit_price = raw_price * (1 + slip)
+            gross += (entry - exit_price) * qty * frac
+    fee = notional * float(pos.get("fee_rate", FEE_RATE)) * 2
+    return gross - fee, gross, fee, notional * slip * 2
+
 def check_positions(state, kline_data):
     closed = []; now = datetime.now(timezone.utc)
     for pos in state["positions"]:
@@ -371,47 +477,43 @@ def check_positions(state, kline_data):
         if sym not in kline_data: continue
         df = kline_data[sym]
         if len(df) == 0: continue
-        cp = float(df["close"].iloc[-1]); ch = float(df["high"].iloc[-1]); cl = float(df["low"].iloc[-1])
-        exit_price = None; exit_reason = None
+        records = _records_from_df(df)
+        entry_i = _entry_index(records, pos.get("entry_bar_time"))
+        if entry_i is None: continue
+        current_i = len(records) - 1
+        strategy = next((s for s in STRATEGIES if s["name"] == pos["strategy"]), {})
+        fills = simulate_live_fills(records, entry_i, pos["side"], pos["entry"], pos["stop"], pos["take"], strategy, current_i)
+        pos["bars_held"] = max(0, current_i - entry_i + 1)
+        pos["fills_seen"] = [{"frac": f, "price": p, "reason": r, "bar": b} for f,p,r,b in fills]
 
-        if   pos["side"]=="LONG"  and ch >= pos["take"]:  exit_price, exit_reason = pos["take"], "TP"
-        elif pos["side"]=="SHORT" and cl <= pos["take"]:  exit_price, exit_reason = pos["take"], "TP"
-        elif pos["side"]=="LONG"  and cl <= pos["stop"]:  exit_price, exit_reason = pos["stop"], "SL"
-        elif pos["side"]=="SHORT" and ch >= pos["stop"]:  exit_price, exit_reason = pos["stop"], "SL"
+        # Only close and book P&L once all fractions are filled, matching backtest's final trade accounting.
+        if not fills or sum(f[0] for f in fills) < 1.0 - 1e-9:
+            continue
 
-        if exit_price is None and not pos.get("breakeven_activated"):
-            be = pos.get("breakeven_r")
-            if be:
-                entry = pos["entry"]; sp = pos.get("stop_pct",0.02)
-                if pos["side"]=="LONG" and cp >= entry*(1+be*sp):
-                    pos["stop"] = entry; pos["breakeven_activated"] = True
-                elif pos["side"]=="SHORT" and cp <= entry*(1-be*sp):
-                    pos["stop"] = entry; pos["breakeven_activated"] = True
+        pnl_dollar, gross_pnl, fee, slip_cost = _net_pnl_from_fills(pos, fills)
+        exit_raw = fills[-1][1]
+        exit_reason = fills[-1][2]
+        exit_price = exit_raw * (1 - pos.get("slippage_rate", slippage_rate(sym))) if pos["side"] == "LONG" else exit_raw * (1 + pos.get("slippage_rate", slippage_rate(sym)))
+        pnl_pct = pnl_dollar / float(pos.get("notional", pos["alloc"])) * 100
+        state["balance"] += pnl_dollar
+        if state["balance"] > state.get("peak_balance", TOTAL_ALLOC):
+            state["peak_balance"] = state["balance"]
 
-        pos["bars_held"] = pos.get("bars_held",0) + 1
-        if exit_price is None and pos["bars_held"] >= pos.get("max_bars",999):
-            exit_price, exit_reason = cp, "EXPIRY"
-
-        if exit_price is not None:
-            pnl_pct = (exit_price-pos["entry"])/pos["entry"] if pos["side"]=="LONG" else (pos["entry"]-exit_price)/pos["entry"]
-            pnl_dollar = pnl_pct * pos.get("notional", pos["alloc"])
-            state["balance"] += pnl_dollar
-            if state["balance"] > state.get("peak_balance", TOTAL_ALLOC):
-                state["peak_balance"] = state["balance"]
-
-            trade = {
-                "exit_time": now.isoformat(), "strategy": pos["strategy"],
-                "symbol": sym, "side": pos["side"], "entry": pos["entry"],
-                "exit": exit_price, "exit_reason": exit_reason,
-                "pnl": round(pnl_dollar,2), "pnl_pct": round(pnl_pct*100,2),
-                "bars_held": pos["bars_held"], "entry_time": pos["entry_time"],
-                "regime": pos.get("entry_regime",""), "adx_entry": pos.get("entry_adx",""),
-                "atr_entry": pos.get("entry_atr",""), "volume_ratio": pos.get("entry_vol_ratio",""),
-                "alloc": pos["alloc"], "notional": pos.get("notional",""),
-                "risk_dollar": pos.get("risk_dollar",""),
-            }
-            closed.append(trade)
-            append_trade_csv(trade)
+        trade = {
+            "exit_time": now.isoformat(), "strategy": pos["strategy"],
+            "symbol": sym, "side": pos["side"], "entry": pos["entry"],
+            "exit": round(exit_price,8), "exit_reason": exit_reason,
+            "pnl": round(pnl_dollar,2), "gross_pnl": round(gross_pnl,2),
+            "fee": round(fee,4), "slippage_cost": round(slip_cost,4),
+            "pnl_pct": round(pnl_pct,2), "bars_held": pos["bars_held"], "entry_time": pos["entry_time"],
+            "regime": pos.get("entry_regime",""), "adx_entry": pos.get("entry_adx",""),
+            "atr_entry": pos.get("entry_atr",""), "volume_ratio": pos.get("entry_vol_ratio",""),
+            "alloc": pos["alloc"], "notional": pos.get("notional",""),
+            "risk_dollar": pos.get("risk_dollar",""),
+            "fills": json.dumps(pos["fills_seen"]),
+        }
+        closed.append(trade)
+        append_trade_csv(trade)
 
     state["positions"] = [p for p in state["positions"]
                           if not any(c["entry_time"]==p["entry_time"] and c["symbol"]==p["symbol"] for c in closed)]
@@ -496,21 +598,22 @@ def main():
 
     # Enter new positions
     for sig in new_signals:
-        sname = sig.pop("_strategy_name")
+        sname = sig.get("_strategy_name")
         s = next(x for x in STRATEGIES if x["name"] == sname)
         alloc = s["alloc"]; risk = alloc * RISK_PER_TRADE
         pos_size = size_position(alloc, RISK_PER_TRADE, sig["entry"], sig["stop"])
         df = kline_data[s["symbol"]]
-        row = df.iloc[-1]
+        row = df.iloc[-2]  # signal bar, matching get_signals()/backtest decision bar
         state["positions"].append({
             "strategy": s["name"], "symbol": s["symbol"], "side": sig["side"],
-            "entry": sig["entry"], "stop": sig["stop"], "take": sig["take"],
+            "entry": sig["entry"], "raw_entry": sig.get("raw_entry"), "stop": sig["stop"], "take": sig["take"],
             "alloc": alloc, "notional": pos_size, "risk_dollar": round(risk,2),
+            "fee_rate": FEE_RATE, "slippage_rate": slippage_rate(s["symbol"]),
             "stop_pct": abs(sig["entry"]-sig["stop"])/sig["entry"],
             "max_bars": s["max_holding_bars"], "bars_held": 0,
-            "breakeven_activated": False, "breakeven_r": s.get("breakeven_r"),
             "entry_time": now.isoformat(),
-            "entry_bar_time": str(df.index[-1]),
+            "signal_bar_time": sig.get("signal_bar_time"),
+            "entry_bar_time": sig.get("entry_bar_time", str(df.index[-1])),
             "entry_regime": "low_vol" if safe_float(row.get("rv_pct",50)) <= 50 else "high_vol",
             "entry_adx": round(safe_float(row.get("adx14")), 1),
             "entry_atr": round(safe_float(row["atr14"]), 4),

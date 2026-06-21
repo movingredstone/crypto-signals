@@ -109,10 +109,12 @@ C. Indicator 계산 일치 여부
 
 D. 리스크/페이퍼 트레이딩 동작
 - position sizing formula: `allocation * risk_pct / (abs(entry-stop)/entry)`
+- signal timing이 백테스트와 일치하는지 확인해: 신호는 이전 닫힌 봉에서 판단하고, 진입은 다음/현재 봉 open에 slippage를 적용해야 한다.
 - max_holding_bars가 적용되는지
-- breakeven_r가 DOGE에만 적용되는지
-- partial_tp_r/partial_tp_frac가 파라미터에는 있으나 실제 fill simulation에 반영되는지 확인해. 반영 안 되어 있으면 “known missing feature”로 보고해.
-- 수수료/슬리피지 반영 여부 확인. 반영 안 되어 있으면 페이퍼 결과가 낙관적일 수 있다고 지적해.
+- breakeven_r가 `simulate_fills()`와 같은 순서로 적용되는지
+- partial_tp_r/partial_tp_frac가 `simulate_fills()`와 같은 순서로 적용되는지: stop first → partial TP → final TP → breakeven → trailing.
+- 수수료/슬리피지가 반영되는지: entry slippage, exit slippage, round-trip taker fee.
+- time_exit은 max_holding_bars에 도달했을 때만 발생해야 한다.
 
 E. GitHub Actions
 - workflow가 `paper_trader_github.py`를 실행하는지 확인해. 이전 legacy `paper_signal.py`는 사용하면 안 됨.

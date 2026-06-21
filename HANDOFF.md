@@ -143,10 +143,15 @@ From `src/indicators.py` and `research_engine.enrich_features()`:
   - Wilder ATR/RSI/ADX style smoothing
 - Still verify independently.
 
-## Known Missing/Needs Review
-- Partial take-profit parameters exist, but verify whether current live fill simulation fully implements partial exits. If not, mark as missing.
-- Slippage/fees may not be fully modeled in the GitHub paper trader. If absent, paper returns may be optimistic.
-- Original stress CSV/result CSV is not present in repo; if needed, request it and compare `params_json` directly.
+## Implemented to Match Backtest Engine
+- Entry timing: signal is evaluated on the previous closed bar, entry uses the next/current bar open with slippage, matching `entry_i = i + 1` in `research_engine.py`.
+- Partial take-profit: implemented with the same order as `simulate_fills()` — stop first, partial TP, final TP, breakeven, trailing update.
+- Breakeven: implemented through the same `breakeven_r` logic used by `simulate_fills()`.
+- Fees/slippage: entry slippage, exit slippage, and taker round-trip fee are included using `config.yaml` values (`fees.taker=0.0005`, default slippage `0.0004`).
+- Time exit: only occurs after `max_holding_bars`, matching the backtest horizon behavior.
+
+## Still Needs External Source Check
+- Original stress CSV/result CSV is not present in repo; if needed, request it and compare `params_json` directly against `STRATEGIES`.
 
 ## Independent Verification Prompt
 See `VERIFY_PROMPT.md` in this repo.
