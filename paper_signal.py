@@ -38,8 +38,14 @@ STRATEGIES = [
 def fetch_klines(symbol, interval, limit=300):
     url = f"{BINANCE_BASE}/fapi/v1/klines"
     params = {"symbol": symbol, "interval": interval, "limit": limit}
-    r = requests.get(url, params=params, timeout=10)
-    data = r.json()
+    try:
+        r = requests.get(url, params=params, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        raise RuntimeError(f"Binance API error for {symbol}: {e}")
+    if not isinstance(data, list) or len(data) == 0:
+        raise RuntimeError(f"No data from Binance for {symbol} ({interval})")
     df = pd.DataFrame(data, columns=[
         "open_time","open","high","low","close","volume",
         "close_time","quote_vol","trades","taker_buy_vol",
@@ -173,7 +179,11 @@ def main():
     total_signals = 0
     
     for s in STRATEGIES:
-        df = fetch_klines(s["symbol"], s["interval"])
+        try:
+            df = fetch_klines(s["symbol"], s["interval"])
+        except Exception as e:
+            lines.append(f"❌ {s['name']}: {e}")
+            continue
         signals, info = check_signals(df, s["params"])
         
         alloc = s["alloc"]
