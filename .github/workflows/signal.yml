@@ -1,22 +1,30 @@
-name: Crypto Signal Check
+name: Crypto Paper Trader
 
 on:
   schedule:
     - cron: "0 */4 * * *"  # Every 4 hours
   workflow_dispatch:        # Manual trigger
 
+permissions:
+  contents: write           # Allow committing paper_state.json
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # Full history for git operations
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements_paper.txt
-      - name: Run signal checker
+      - name: Run paper trader
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python paper_signal.py
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: python paper_trader_github.py
