@@ -1,8 +1,9 @@
 """
-GitHub Actions Paper Trader v2 — $330 3-Coin Portfolio
+GitHub Actions Paper Trader v3 — $330 3-Coin Portfolio
+Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
 """
-import json, os, sys, time, requests, csv
+import json, os, sys, time, requests, csv, math
 import pandas as pd
 import numpy as np
 from datetime import datetime, timezone, timedelta
@@ -20,15 +21,18 @@ STRATEGIES = [
     {"name":"DOGE macd_momentum/8h","symbol":"DOGEUSDT","interval":"8h","alloc":110.0,
      "family":"macd_momentum","direction_filter":"price_ema100","lookback":48,"volume_min":1.2,
      "atr_stop_mult":2.0,"take_profit_r":3.0,"max_holding_bars":12,"stop_rule":"swing",
-     "adx_min":20,"regime":"low_vol","breakeven_r":1.0,"partial_tp_r":1.0,"partial_tp_frac":0.5},
+     "adx_min":20,"regime":"low_vol","breakeven_r":1.0,"partial_tp_r":1.0,"partial_tp_frac":0.5,
+     "tolerance_pct":0.006},
     {"name":"SUI macd_momentum/4h","symbol":"SUIUSDT","interval":"4h","alloc":110.0,
      "family":"macd_momentum","direction_filter":"ema_fast_stack","lookback":48,"volume_min":2.0,
      "atr_stop_mult":3.0,"take_profit_r":4.0,"max_holding_bars":24,"stop_rule":"swing",
-     "adx_min":20,"regime":"any","partial_tp_r":1.0,"partial_tp_frac":0.5},
+     "adx_min":20,"regime":"any","partial_tp_r":1.0,"partial_tp_frac":0.5,
+     "tolerance_pct":0.006},
     {"name":"AVAX trend_pullback/8h","symbol":"AVAXUSDT","interval":"8h","alloc":110.0,
      "family":"trend_pullback","direction_filter":"price_ema100","lookback":48,"volume_min":1.2,
      "atr_stop_mult":2.0,"take_profit_r":5.0,"max_holding_bars":12,"stop_rule":"swing",
-     "adx_min":0,"regime":"low_vol","partial_tp_frac":0.5,"pullback_ref":"ema20"},
+     "adx_min":0,"regime":"low_vol","partial_tp_frac":0.5,"pullback_ref":"ema20",
+     "tolerance_pct":0.006},
 ]
 
 # ══════════════════════════════════════════════════════════════════════
@@ -52,140 +56,229 @@ def fetch_klines(symbol, interval, limit=300):
     return df
 
 # ══════════════════════════════════════════════════════════════════════
-# Indicators
+# Indicators (match backtest engine naming: ema20, atr14, etc.)
 # ══════════════════════════════════════════════════════════════════════
 def _ema(s, n): return s.ewm(span=n, adjust=False).mean()
 def _sma(s, n): return s.rolling(n).mean()
 
-def compute_atr(df, period=14):
-    h,l,c = df["high"],df["low"],df["close"]
-    tr = pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1)
-    return tr.ewm(span=period, adjust=False).mean()
-
-def compute_adx(df, period=14):
-    h,l = df["high"],df["low"]
+def compute_indicators(df):
+    """Compute all indicators the backtest engine uses, stored as columns."""
+    c, h, l = df["close"], df["high"], df["low"]
+    # EMAs
+    df["ema20"] = _ema(c, 20)
+    df["ema50"] = _ema(c, 50)
+    df["ema100"] = _ema(c, 100)
+    df["ema200"] = _ema(c, 200)
+    # ATR
+    tr = pd.concat([h-l, (h-c.shift()).abs(), (l-c.shift()).abs()], axis=1).max(axis=1)
+    df["atr14"] = tr.ewm(span=14, adjust=False).mean()
+    # MACD
+    e_f, e_s = _ema(c, 12), _ema(c, 26)
+    macd = e_f - e_s
+    sig = _ema(macd, 9)
+    df["macd_hist"] = macd - sig
+    # RSI
+    delta = c.diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    rs = gain / loss
+    df["rsi14"] = 100 - (100 / (1 + rs))
+    # ADX
     pdm = h.diff().clip(lower=0); ndm = (-l.diff()).clip(lower=0)
-    atr = compute_atr(df, period)
-    pdi = 100*_ema(pdm,period)/atr; ndi = 100*_ema(ndm,period)/atr
-    return _ema((pdi-ndi).abs()/(pdi+ndi)*100, period), pdi, ndi
+    atr14 = df["atr14"]
+    pdi = 100 * _ema(pdm, 14) / atr14; ndi = 100 * _ema(ndm, 14) / atr14
+    df["adx14"] = _ema((pdi - ndi).abs() / (pdi + ndi) * 100, 14)
+    # Volume ratio
+    df["volume_ratio"] = df["volume"] / _sma(df["volume"], 20)
+    # ATR percentile (for regime)
+    df["atr_pct"] = df["atr14"].rolling(100).apply(lambda x: (x.iloc[-1] < x).mean() * 100, raw=False)
+    # Swing highs/lows (lookback window)
+    lookback = 48
+    df["swing_high"] = h.rolling(lookback, min_periods=1).max()
+    df["swing_low"]  = l.rolling(lookback, min_periods=1).min()
+    return df
 
-def compute_macd(close, fast=12, slow=26, signal=9):
-    macd = _ema(close,fast) - _ema(close,slow)
-    return macd, _ema(macd,signal), macd - _ema(macd,signal)
+# ══════════════════════════════════════════════════════════════════════
+# Backtest-Matched Signal Logic
+# ══════════════════════════════════════════════════════════════════════
 
-def market_snapshot(df, atr):
-    """Return regime + key metrics at current bar for data recording."""
-    atr_base = atr.rolling(100).mean()
-    ratio = atr / atr_base
-    r = ratio.iloc[-1]
-    regime = "high_vol" if r > 1.3 else ("low_vol" if r < 0.7 else "normal")
-    adx,_,_ = compute_adx(df, 14)
-    return {
-        "regime": regime,
-        "adx": round(float(adx.iloc[-1]), 1),
-        "atr": round(float(atr.iloc[-1]), 4),
-        "atr_ratio": round(float(r), 2),
-        "price": round(float(df["close"].iloc[-1]), 4),
-        "volume_ratio": round(float(df["volume"].iloc[-1] / _sma(df["volume"],20).iloc[-1]), 2),
+def safe_float(val, default=0.0):
+    """Match backtest engine's safe_float."""
+    try:
+        v = float(val)
+        return v if math.isfinite(v) else default
+    except (ValueError, TypeError):
+        return default
+
+def near(value, target, tolerance_pct):
+    """Match backtest engine's near()."""
+    if pd.isna(value) or pd.isna(target) or value == 0:
+        return False
+    return abs(value - target) / abs(value) <= tolerance_pct
+
+def direction_allowed(row, side, direction_filter):
+    """Match backtest engine's direction_allowed()."""
+    if direction_filter == "none":
+        return True
+    if direction_filter == "ema200":
+        return (side == "LONG" and row["close"] > safe_float(row["ema200"])) or \
+               (side == "SHORT" and row["close"] < safe_float(row["ema200"]))
+    if direction_filter == "ema_stack":
+        return (side == "LONG" and safe_float(row["ema20"]) > safe_float(row["ema50"]) > safe_float(row["ema200"])) or \
+               (side == "SHORT" and safe_float(row["ema20"]) < safe_float(row["ema50"]) < safe_float(row["ema200"]))
+    if direction_filter == "ema_fast_stack":
+        return (side == "LONG" and safe_float(row["ema20"]) > safe_float(row["ema50"])) or \
+               (side == "SHORT" and safe_float(row["ema20"]) < safe_float(row["ema50"]))
+    if direction_filter == "price_ema100":
+        return (side == "LONG" and row["close"] > safe_float(row["ema100"])) or \
+               (side == "SHORT" and row["close"] < safe_float(row["ema100"]))
+    if direction_filter == "mtf_trend":
+        # Multi-timeframe trend: use EMA20/EMA50/EMA100 alignment
+        ema20_v = safe_float(row["ema20"]); ema50_v = safe_float(row["ema50"])
+        ema100_v = safe_float(row["ema100"])
+        trend_up = ema20_v > ema50_v > ema100_v
+        trend_dn = ema20_v < ema50_v < ema100_v
+        return (side == "LONG" and trend_up) or (side == "SHORT" and trend_dn)
+    return True
+
+def confirmation_ok(row, exp):
+    """Match backtest engine's confirmation_ok() — volume, ATR%, ADX, regime."""
+    vr = safe_float(row["volume_ratio"], 0)
+    if vr < exp.get("volume_min", 0.0):
+        return False
+
+    atr_pct = safe_float(row.get("atr_pct", 50), 50)
+    if atr_pct < exp.get("atr_pct_min", 0):
+        return False
+    if atr_pct > exp.get("atr_pct_max", 100):
+        return False
+
+    adx_min = exp.get("adx_min", 0)
+    if adx_min and adx_min > 0:
+        adx = safe_float(row.get("adx14"), 0)
+        if not math.isfinite(adx) or adx < adx_min:
+            return False
+
+    regime = exp.get("regime", "any")
+    if regime and regime != "any":
+        rv_pct = safe_float(row.get("atr_pct", 50), 50)
+        if not math.isfinite(rv_pct):
+            return False
+        if regime == "low_vol" and rv_pct > 50:
+            return False
+        if regime == "high_vol" and rv_pct < 50:
+            return False
+
+    return True
+
+def check_entry(row, prev_row, side, exp, df=None):
+    """Match backtest engine's check_entry(). Returns True/False."""
+    family = exp["family"]
+    
+    if family == "macd_momentum":
+        # Backtest: LONG = hist > 0 and hist > prev_hist
+        #          SHORT = hist < 0 and hist < prev_hist
+        hist = safe_float(row["macd_hist"])
+        prev_hist = safe_float(prev_row["macd_hist"])
+        if side == "LONG":
+            return hist > 0 and hist > prev_hist
+        return hist < 0 and hist < prev_hist
+
+    if family == "trend_pullback":
+        target_col = exp.get("pullback_ref", "ema20")
+        target = safe_float(row[target_col])
+        tol = exp.get("tolerance_pct", 0.006)
+        return near(row["close"], target, tol)
+
+    return False
+
+def make_stop_take(row, side, entry, exp):
+    """Match backtest engine's make_stop_take()."""
+    atr = safe_float(row["atr14"])
+    if not math.isfinite(atr) or atr <= 0:
+        return None, None
+
+    atr_mult = exp.get("atr_stop_mult", 1.5)
+    tp_r = exp.get("take_profit_r", 2.0)
+    stop_rule = exp.get("stop_rule", "atr")
+
+    if side == "LONG":
+        atr_stop = entry - atr_mult * atr
+        swing_stop = safe_float(row.get("swing_low"), entry)
+
+        if stop_rule == "atr":
+            stop = atr_stop
+        elif stop_rule == "swing":
+            stop = swing_stop
+        else:
+            stop = min(atr_stop, swing_stop)
+
+        if not math.isfinite(stop) or stop <= 0 or stop >= entry:
+            return None, None
+
+        risk = entry - stop
+        take = entry + tp_r * risk
+        return round(stop, 4), round(take, 4)
+
+    # SHORT
+    atr_stop = entry + atr_mult * atr
+    swing_stop = safe_float(row.get("swing_high"), entry)
+
+    if stop_rule == "atr":
+        stop = atr_stop
+    elif stop_rule == "swing":
+        stop = swing_stop
+    else:
+        stop = max(atr_stop, swing_stop)
+
+    if not math.isfinite(stop) or stop <= entry:
+        return None, None
+
+    risk = stop - entry
+    take = entry - tp_r * risk
+    return round(stop, 4), round(take, 4)
+
+def get_signals(df, exp):
+    """Generate signals using backtest-matched logic. Returns (signals, snapshot)."""
+    # Ensure indicators are computed
+    if "ema20" not in df.columns:
+        df = compute_indicators(df)
+
+    if len(df) < 3:
+        return [], {}
+
+    row = df.iloc[-1]
+    prev_row = df.iloc[-2]
+
+    # Market snapshot for logging
+    snap = {
+        "regime": "low_vol" if safe_float(row.get("atr_pct",50)) <= 50 else "high_vol",
+        "adx": round(safe_float(row.get("adx14")), 1),
+        "atr": round(safe_float(row["atr14"]), 4),
+        "atr_ratio": 0,  # unused now, keeping for compat
+        "price": round(float(row["close"]), 4),
+        "volume_ratio": round(safe_float(row.get("volume_ratio", 1)), 2),
     }
 
-# ══════════════════════════════════════════════════════════════════════
-# Strategy Signal Logic
-# ══════════════════════════════════════════════════════════════════════
-def macd_momentum_signal(df, params):
-    close, high, low = df["close"], df["high"], df["low"]
-    macd_line, signal_line, hist = compute_macd(close)
-    atr = compute_atr(df, 14)
-    ema100, ema20, ema50 = _ema(close,100), _ema(close,20), _ema(close,50)
-    adx, pdi, ndi = compute_adx(df, 14)
-    atr_base = atr.rolling(100).mean()
-    regime_ratio = atr / atr_base
-    rv = regime_ratio.iloc[-1]
+    # Pre-checks (confirmation)
+    if not confirmation_ok(row, exp):
+        return [], snap
 
-    reg = "high_vol" if rv > 1.3 else ("low_vol" if rv < 0.7 else "normal")
-    if params["regime"] != "any" and reg != params["regime"]:
-        return [], market_snapshot(df, atr)
-    if adx.iloc[-1] < params.get("adx_min", 0):
-        return [], market_snapshot(df, atr)
-
-    vol_ma = _sma(df["volume"], 20)
-    if df["volume"].iloc[-1] <= vol_ma.iloc[-1] * params["volume_min"]:
-        return [], market_snapshot(df, atr)
-
-    price = close.iloc[-1]; atr_val = atr.iloc[-1]
-    sm = params["atr_stop_mult"]; tm = params["take_profit_r"]
-    signals = []
-    hist_cross_up   = hist.iloc[-2] < 0 and hist.iloc[-1] > 0
-    hist_turning_up = hist.iloc[-1] > hist.iloc[-2] and hist.iloc[-1] < 0
-    dfilter = params.get("direction_filter","")
-    trend_long = True
-    if dfilter == "price_ema100":   trend_long = close.iloc[-1] > ema100.iloc[-1]
-    elif dfilter == "ema_fast_stack": trend_long = ema20.iloc[-1] > ema50.iloc[-1]
-
-    if (hist_cross_up or hist_turning_up) and trend_long:
-        stop = price - atr_val*sm; take = price + atr_val*sm*tm
-        if stop > 0:
-            signals.append({"side":"LONG","entry":round(float(price),4),
-                           "stop":round(float(stop),4),"take":round(float(take),4)})
-
-    hist_cross_dn   = hist.iloc[-2] > 0 and hist.iloc[-1] < 0
-    hist_turning_dn = hist.iloc[-1] < hist.iloc[-2] and hist.iloc[-1] > 0
-    trend_short = True
-    if dfilter == "price_ema100":   trend_short = close.iloc[-1] < ema100.iloc[-1]
-    elif dfilter == "ema_fast_stack": trend_short = ema20.iloc[-1] < ema50.iloc[-1]
-
-    if (hist_cross_dn or hist_turning_dn) and trend_short:
-        stop = price + atr_val*sm; take = price - atr_val*sm*tm
-        if stop > 0:
-            signals.append({"side":"SHORT","entry":round(float(price),4),
-                           "stop":round(float(stop),4),"take":round(float(take),4)})
-    return signals, market_snapshot(df, atr)
-
-def trend_pullback_signal(df, params):
-    close = df["close"]
-    atr = compute_atr(df, 14)
-    ema100, ema20, ema50 = _ema(close,100), _ema(close,20), _ema(close,50)
-    adx,_,_ = compute_adx(df, 14)
-    atr_base = atr.rolling(100).mean()
-    rv = (atr/atr_base).iloc[-1]
-    reg = "high_vol" if rv > 1.3 else ("low_vol" if rv < 0.7 else "normal")
-    if params["regime"] != "any" and reg != params["regime"]:
-        return [], market_snapshot(df, atr)
-    if adx.iloc[-1] < params.get("adx_min",0):
-        return [], market_snapshot(df, atr)
-    vol_ma = _sma(df["volume"],20)
-    if df["volume"].iloc[-1] <= vol_ma.iloc[-1] * params["volume_min"]:
-        return [], market_snapshot(df, atr)
-
-    price = close.iloc[-1]; atr_val = atr.iloc[-1]
-    ref = ema20 if params.get("pullback_ref","ema20") == "ema20" else ema50
-    sm = params["atr_stop_mult"]; tm = params["take_profit_r"]
+    dfilter = exp.get("direction_filter", "none")
     signals = []
 
-    uptrend = ema20.iloc[-1] > ema50.iloc[-1] and close.iloc[-1] > ema100.iloc[-1]
-    near_ref = abs(close.iloc[-1] - ref.iloc[-1]) < atr_val * 1.5
-    pulled_back = close.iloc[-3] > ref.iloc[-3] and near_ref
-    if uptrend and pulled_back:
-        stop = price - atr_val*sm; take = price + atr_val*sm*tm
-        if stop > 0:
-            signals.append({"side":"LONG","entry":round(float(price),4),
-                           "stop":round(float(stop),4),"take":round(float(take),4)})
+    for side in ["LONG", "SHORT"]:
+        if not direction_allowed(row, side, dfilter):
+            continue
+        if not check_entry(row, prev_row, side, exp, df):
+            continue
 
-    downtrend = ema20.iloc[-1] < ema50.iloc[-1] and close.iloc[-1] < ema100.iloc[-1]
-    near_ref_s = abs(close.iloc[-1] - ref.iloc[-1]) < atr_val * 1.5
-    pulled_back_s = close.iloc[-3] < ref.iloc[-3] and near_ref_s
-    if downtrend and pulled_back_s:
-        stop = price + atr_val*sm; take = price - atr_val*sm*tm
-        if stop > 0:
-            signals.append({"side":"SHORT","entry":round(float(price),4),
-                           "stop":round(float(stop),4),"take":round(float(take),4)})
-    return signals, market_snapshot(df, atr)
+        entry = round(float(row["close"]), 4)
+        stop, take = make_stop_take(row, side, entry, exp)
+        if stop is not None and take is not None:
+            signals.append({"side": side, "entry": entry, "stop": stop, "take": take})
 
-def get_signals(df, s):
-    f = s["family"]
-    if f == "macd_momentum":    return macd_momentum_signal(df, s)
-    elif f == "trend_pullback": return trend_pullback_signal(df, s)
-    return [], {}
+    return signals, snap
 
 # ══════════════════════════════════════════════════════════════════════
 # State (v2 — richer data)
@@ -207,7 +300,6 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             s = json.load(f)
-        # migrate v1 → v2
         if s.get("version",1) < 2:
             s["peak_balance"] = s.get("balance", s.get("initial_balance", TOTAL_ALLOC))
             s["signal_log"] = []
@@ -227,7 +319,7 @@ def commit_state():
     actor = os.environ.get("GITHUB_ACTOR","paper-trader")
     os.system(f"git config user.name '{actor}'")
     os.system(f"git config user.email '{actor}@users.noreply.github.com'")
-    os.system(f"git remote set-url origin https://x-access-token:{token}@github.com/{repo}.git")
+    os.system(f"git remote set-url origin https://x-access-token:***@github.com/{repo}.git")
     os.system(f"git add {STATE_FILE} {TRADE_LOG_CSV}")
     if os.system("git diff --cached --quiet") != 0:
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
@@ -242,7 +334,7 @@ def size_position(alloc, risk_pct, entry, stop):
     return round(alloc*risk_pct/sp, 2) if sp > 0 else 0
 
 # ══════════════════════════════════════════════════════════════════════
-# Trade Log CSV (append-only, human-readable)
+# Trade Log CSV
 # ══════════════════════════════════════════════════════════════════════
 TRADE_CSV_FIELDS = [
     "exit_time","strategy","symbol","side","entry","exit","exit_reason",
@@ -251,7 +343,6 @@ TRADE_CSV_FIELDS = [
 ]
 
 def append_trade_csv(trade):
-    """Append one closed trade to CSV file."""
     exists = os.path.exists(TRADE_LOG_CSV)
     with open(TRADE_LOG_CSV, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=TRADE_CSV_FIELDS)
@@ -269,9 +360,7 @@ def check_positions(state, kline_data):
         if sym not in kline_data: continue
         df = kline_data[sym]
         if len(df) == 0: continue
-        cp = float(df["close"].iloc[-1])
-        ch = float(df["high"].iloc[-1])
-        cl = float(df["low"].iloc[-1])
+        cp = float(df["close"].iloc[-1]); ch = float(df["high"].iloc[-1]); cl = float(df["low"].iloc[-1])
         exit_price = None; exit_reason = None
 
         if   pos["side"]=="LONG"  and ch >= pos["take"]:  exit_price, exit_reason = pos["take"], "TP"
@@ -279,7 +368,6 @@ def check_positions(state, kline_data):
         elif pos["side"]=="LONG"  and cl <= pos["stop"]:  exit_price, exit_reason = pos["stop"], "SL"
         elif pos["side"]=="SHORT" and ch >= pos["stop"]:  exit_price, exit_reason = pos["stop"], "SL"
 
-        # breakeven
         if exit_price is None and not pos.get("breakeven_activated"):
             be = pos.get("breakeven_r")
             if be:
@@ -301,9 +389,9 @@ def check_positions(state, kline_data):
                 state["peak_balance"] = state["balance"]
 
             trade = {
-                "exit_time": now.isoformat(),
-                "strategy": pos["strategy"], "symbol": sym, "side": pos["side"],
-                "entry": pos["entry"], "exit": exit_price, "exit_reason": exit_reason,
+                "exit_time": now.isoformat(), "strategy": pos["strategy"],
+                "symbol": sym, "side": pos["side"], "entry": pos["entry"],
+                "exit": exit_price, "exit_reason": exit_reason,
                 "pnl": round(pnl_dollar,2), "pnl_pct": round(pnl_pct*100,2),
                 "bars_held": pos["bars_held"], "entry_time": pos["entry_time"],
                 "regime": pos.get("entry_regime",""), "adx_entry": pos.get("entry_adx",""),
@@ -347,7 +435,9 @@ def main():
     kline_data = {}; errors = []
     for s in STRATEGIES:
         try:
-            kline_data[s["symbol"]] = fetch_klines(s["symbol"], s["interval"])
+            df = fetch_klines(s["symbol"], s["interval"])
+            df = compute_indicators(df)
+            kline_data[s["symbol"]] = df
         except Exception as e:
             errors.append(f"{s['name']}: {e}")
 
@@ -363,10 +453,9 @@ def main():
             signals, snap = get_signals(kline_data[s["symbol"]], s)
             for sig in signals:
                 entry = {
-                    "time": now.isoformat(),
-                    "strategy": s["name"], "symbol": s["symbol"],
-                    "side": sig["side"], "entry": sig["entry"],
-                    "stop": sig["stop"], "take": sig["take"],
+                    "time": now.isoformat(), "strategy": s["name"],
+                    "symbol": s["symbol"], "side": sig["side"],
+                    "entry": sig["entry"], "stop": sig["stop"], "take": sig["take"],
                     "taken": not already_in,
                     "regime": snap.get("regime",""), "adx": snap.get("adx",""),
                     "atr": snap.get("atr",""), "atr_ratio": snap.get("atr_ratio",""),
@@ -374,13 +463,11 @@ def main():
                 }
                 signal_entries.append(entry)
                 if not already_in:
-                    sig["strategy_obj"] = s
-                    sig["snapshot"] = snap
-                    sig["_strategy_name"] = s["name"]  # for report display
+                    sig["_strategy_name"] = s["name"]
                     new_signals.append(sig)
         except Exception as e:
             errors.append(f"Signal {s['name']}: {e}")
-    
+
     state["signal_log"].extend(signal_entries)
 
     # Equity curve snapshot (daily)
@@ -394,14 +481,16 @@ def main():
                 upnl = (cp-pos["entry"])/pos["entry"]*pos.get("notional",pos["alloc"])
                 if pos["side"]=="SHORT": upnl = (pos["entry"]-cp)/pos["entry"]*pos.get("notional",pos["alloc"])
                 total_value += upnl
-        state["equity_curve"].append({"date": today, "balance": round(total_value,2), "positions": len(state["positions"])})
+        state["equity_curve"].append({"date":today,"balance":round(total_value,2),"positions":len(state["positions"])})
 
     # Enter new positions
     for sig in new_signals:
-        s = sig.pop("strategy_obj")
-        snap = sig.pop("snapshot")
+        sname = sig.pop("_strategy_name")
+        s = next(x for x in STRATEGIES if x["name"] == sname)
         alloc = s["alloc"]; risk = alloc * RISK_PER_TRADE
         pos_size = size_position(alloc, RISK_PER_TRADE, sig["entry"], sig["stop"])
+        df = kline_data[s["symbol"]]
+        row = df.iloc[-1]
         state["positions"].append({
             "strategy": s["name"], "symbol": s["symbol"], "side": sig["side"],
             "entry": sig["entry"], "stop": sig["stop"], "take": sig["take"],
@@ -409,15 +498,17 @@ def main():
             "stop_pct": abs(sig["entry"]-sig["stop"])/sig["entry"],
             "max_bars": s["max_holding_bars"], "bars_held": 0,
             "breakeven_activated": False, "breakeven_r": s.get("breakeven_r"),
-            "entry_time": now.isoformat(), "entry_bar_time": str(kline_data[s["symbol"]].index[-1]),
-            "entry_regime": snap.get("regime",""), "entry_adx": snap.get("adx",""),
-            "entry_atr": snap.get("atr",""), "entry_vol_ratio": snap.get("volume_ratio",""),
+            "entry_time": now.isoformat(),
+            "entry_bar_time": str(df.index[-1]),
+            "entry_regime": "low_vol" if safe_float(row.get("atr_pct",50)) <= 50 else "high_vol",
+            "entry_adx": round(safe_float(row.get("adx14")), 1),
+            "entry_atr": round(safe_float(row["atr14"]), 4),
+            "entry_vol_ratio": round(safe_float(row.get("volume_ratio",1)), 2),
         })
 
     # ── Build Telegram Report ──
     lines = [f"📊 Paper Portfolio — {now.strftime('%Y-%m-%d %H:%M UTC')}", ""]
 
-    # Balance
     total_value = state["balance"]
     for pos in state["positions"]:
         sym = pos["symbol"]
@@ -434,7 +525,6 @@ def main():
     lines.append(f"{e} Balance: ${total_value:.2f} | P&L: ${pnl_total:+.2f} ({pnl_pct:+.1f}%) | DD: {dd:.1f}%")
     lines.append("")
 
-    # Closed trades this run
     if closed:
         lines.append("🔔 Closed:")
         for t in closed:
@@ -442,7 +532,6 @@ def main():
             lines.append(f"  {icon} {t['symbol']} {t['side']} {t['exit_reason']} | ${t['pnl']:+.2f} ({t['pnl_pct']:+.1f}%) | {t.get('regime','')} ADX{t.get('adx_entry','')}")
         lines.append("")
 
-    # Open positions
     if state["positions"]:
         lines.append("📌 Open:")
         for pos in state["positions"]:
@@ -454,7 +543,6 @@ def main():
             lines.append(f"  {pos['strategy']} {pos['side']} @{pos['entry']:.4f} → {ie} {up:+.1f}% [{pos['bars_held']}/{pos['max_bars']}]")
         lines.append("")
 
-    # New signals (fix broken name display)
     if new_signals:
         lines.append("🎯 Signals:")
         for sig in new_signals:
@@ -463,7 +551,6 @@ def main():
         lines.append("💤 No signals. Normal.")
         lines.append("")
 
-    # Strategy stats (from all-time closed trades)
     if state["closed_trades"]:
         total = len(state["closed_trades"])
         wins = sum(1 for t in state["closed_trades"] if t["pnl"] > 0)
@@ -471,8 +558,6 @@ def main():
         gross = sum(t["pnl"] for t in state["closed_trades"])
         avg_r = gross/total if total else 0
         lines.append(f"📈 All-Time: {total} trades | WR {wr:.0f}% | P&L ${gross:+.2f} | Avg ${avg_r:+.2f}/trade")
-
-        # Per-strategy breakdown
         by_strat = {}
         for t in state["closed_trades"]:
             k = t["strategy"]
@@ -484,8 +569,6 @@ def main():
         for name, st in by_strat.items():
             swr = st["w"]/st["t"]*100 if st["t"] else 0
             lines.append(f"    {name}: {st['t']} trades, WR {swr:.0f}%, P&L ${st['pnl']:+.2f}")
-
-        # Regime breakdown
         by_regime = {}
         for t in state["closed_trades"]:
             r = t.get("regime","unknown")
@@ -503,7 +586,6 @@ def main():
     print(msg)
     send_telegram(msg)
 
-    # ── Persist ──
     state["last_run"] = now.isoformat()
     save_state(state)
     commit_state()
