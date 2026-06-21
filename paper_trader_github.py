@@ -387,10 +387,10 @@ def main():
     now = datetime.now(timezone.utc)
     state = load_state()
     
-    # Prevent duplicate runs within same bar
+    # Prevent duplicate runs within same bar (allow manual retest after 5 min)
     if state.get("last_run"):
         last = datetime.fromisoformat(state["last_run"])
-        if (now - last).total_seconds() < 3600:
+        if (now - last).total_seconds() < 300:
             print("Skipping — last run too recent")
             return
 
