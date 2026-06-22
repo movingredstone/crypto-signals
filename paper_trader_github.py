@@ -1,5 +1,5 @@
 """
-GitHub Actions Paper Trader v3 — $330 Best Aggressive 3-Coin Portfolio
+GitHub Actions Paper Trader v3 — $330 S&P500-Beater Candidate Portfolio
 Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
 """
@@ -24,21 +24,20 @@ def slippage_rate(symbol):
     return SLIPPAGE_BY_SYMBOL.get(symbol, DEFAULT_SLIPPAGE)
 
 STRATEGIES = [
-    {"name":"SUI macd_momentum/4h","symbol":"SUIUSDT","interval":"4h","alloc":110.0,
-     "family":"macd_momentum","direction_filter":"ema_fast_stack","lookback":48,"volume_min":2.0,
-     "atr_stop_mult":3.0,"take_profit_r":4.0,"max_holding_bars":24,"stop_rule":"swing",
-     "adx_min":20,"regime":"any","partial_tp_r":1.0,"partial_tp_frac":0.5,
-     "tolerance_pct":0.006},
+    {"name":"HBAR macd_momentum/8h","symbol":"HBARUSDT","interval":"8h","alloc":110.0,
+     "family":"macd_momentum","direction_filter":"ema200","lookback":20,"volume_min":1.0,
+     "atr_stop_mult":2.0,"take_profit_r":2.0,"max_holding_bars":12,"stop_rule":"atr",
+     "adx_min":0,"regime":"low_vol","partial_tp_frac":0.5},
     {"name":"AVAX trend_pullback/8h","symbol":"AVAXUSDT","interval":"8h","alloc":110.0,
-     "family":"trend_pullback","direction_filter":"price_ema100","lookback":48,"volume_min":1.2,
-     "atr_stop_mult":2.0,"take_profit_r":5.0,"max_holding_bars":12,"stop_rule":"swing",
-     "adx_min":0,"regime":"low_vol","partial_tp_frac":0.5,"pullback_ref":"ema20",
-     "tolerance_pct":0.006},
-    {"name":"SOL macd_momentum/4h","symbol":"SOLUSDT","interval":"4h","alloc":110.0,
-     "family":"macd_momentum","direction_filter":"ema200","lookback":96,"volume_min":0.0,
-     "atr_stop_mult":2.5,"take_profit_r":3.0,"max_holding_bars":24,"stop_rule":"atr",
-     "adx_min":20,"regime":"any","partial_tp_frac":0.5,
-     "tolerance_pct":0.006},
+     "family":"trend_pullback","direction_filter":"mtf_trend","lookback":48,"volume_min":0.7,
+     "atr_stop_mult":1.5,"take_profit_r":3.0,"max_holding_bars":24,"stop_rule":"atr",
+     "adx_min":20,"regime":"any","trailing_atr_mult":2.0,"partial_tp_frac":0.5,
+     "tolerance_pct":0.006,"pullback_ref":"ema20"},
+    {"name":"DOT trend_pullback/4h","symbol":"DOTUSDT","interval":"4h","alloc":110.0,
+     "family":"trend_pullback","direction_filter":"ema200","lookback":144,"volume_min":1.0,
+     "atr_stop_mult":4.0,"take_profit_r":3.0,"max_holding_bars":72,"stop_rule":"swing",
+     "adx_min":20,"regime":"low_vol","trailing_atr_mult":3.0,"partial_tp_frac":0.5,
+     "tolerance_pct":0.006,"pullback_ref":"ema20"},
 ]
 
 # ══════════════════════════════════════════════════════════════════════
