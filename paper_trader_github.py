@@ -1,11 +1,7 @@
 """
-GitHub Actions Paper Trader v4 — $330 High-Vol Universal Paper Portfolio
+GitHub Actions Paper Trader v3 — $330 S&P500-Beater Candidate Portfolio
 Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
-
-Portfolio source: high-vol 50-coin universal hunt + stage-2 walk-forward
-(results/optimization/high_vol_stage2_walk_forward_results.csv).
-Paper only; not live-trading permission.
 """
 import json, os, sys, time, requests, csv, math
 import pandas as pd
@@ -28,24 +24,26 @@ def slippage_rate(symbol):
     return SLIPPAGE_BY_SYMBOL.get(symbol, DEFAULT_SLIPPAGE)
 
 STRATEGIES = [
-    # High-vol universal deployable-only WF candidates. $330 / 4 = $82.50 each.
-    # Avoid mtf_trend candidates here because standalone paper trader does not build htf_trend.
-    {"name":"UNI macd_momentum/4h","symbol":"UNIUSDT","interval":"4h","alloc":82.5,
-     "family":"macd_momentum","direction_filter":"ema_stack","lookback":48,"volume_min":0.7,
-     "atr_stop_mult":2.5,"take_profit_r":3.0,"max_holding_bars":96,"stop_rule":"atr",
-     "adx_min":15,"regime":"high_vol","partial_tp_frac":0.5},
-    {"name":"NEAR macd_momentum/8h","symbol":"NEARUSDT","interval":"8h","alloc":82.5,
-     "family":"macd_momentum","direction_filter":"ema_fast_stack","lookback":20,"volume_min":1.0,
-     "atr_stop_mult":1.0,"take_profit_r":3.0,"max_holding_bars":72,"stop_rule":"atr",
-     "adx_min":0,"regime":"low_vol","trailing_atr_mult":2.0,"partial_tp_frac":0.5},
-    {"name":"SOL macd_momentum/8h","symbol":"SOLUSDT","interval":"8h","alloc":82.5,
-     "family":"macd_momentum","direction_filter":"price_ema100","lookback":48,"volume_min":1.0,
-     "atr_stop_mult":1.0,"take_profit_r":2.0,"max_holding_bars":96,"stop_rule":"atr",
-     "adx_min":0,"regime":"low_vol","partial_tp_r":1.0,"partial_tp_frac":0.5},
-    {"name":"ADA macd_momentum/4h","symbol":"ADAUSDT","interval":"4h","alloc":82.5,
-     "family":"macd_momentum","direction_filter":"none","lookback":144,"volume_min":0.7,
-     "atr_stop_mult":2.0,"take_profit_r":3.0,"max_holding_bars":48,"stop_rule":"swing",
-     "adx_min":20,"regime":"any","trailing_atr_mult":2.0,"partial_tp_r":1.0,"partial_tp_frac":0.5},
+    {"name":"SUI macd_momentum/4h","symbol":"SUIUSDT","interval":"4h","alloc":350.0,
+     "family":"macd_momentum","direction_filter":"price_ema100","lookback":96,"volume_min":0.5,
+     "atr_stop_mult":4.0,"take_profit_r":6.0,"max_holding_bars":48,"stop_rule":"swing",
+     "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
+    {"name":"SUI macd_momentum/4h #2","symbol":"SUIUSDT","interval":"4h","alloc":200.0,
+     "family":"macd_momentum","direction_filter":"price_ema100","lookback":144,"volume_min":0.5,
+     "atr_stop_mult":4.0,"take_profit_r":6.0,"max_holding_bars":48,"stop_rule":"swing",
+     "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
+    {"name":"LINK keltner_breakout/4h","symbol":"LINKUSDT","interval":"4h","alloc":150.0,
+     "family":"keltner_breakout","direction_filter":"price_ema100","lookback":200,"volume_min":0.0,
+     "atr_stop_mult":2.5,"take_profit_r":4.0,"max_holding_bars":96,"stop_rule":"atr",
+     "adx_min":25,"regime":"high_vol","trailing_atr_mult":5.0,"partial_tp_frac":0.5},
+    {"name":"XRP macd_momentum/4h","symbol":"XRPUSDT","interval":"4h","alloc":150.0,
+     "family":"macd_momentum","direction_filter":"ema200","lookback":200,"volume_min":0.3,
+     "atr_stop_mult":4.0,"take_profit_r":10.0,"max_holding_bars":144,"stop_rule":"atr",
+     "adx_min":25,"regime":"high_vol","trailing_atr_mult":5.0,"partial_tp_frac":0.5},
+    {"name":"DOGE macd_momentum/4h","symbol":"DOGEUSDT","interval":"4h","alloc":150.0,
+     "family":"macd_momentum","direction_filter":"price_ema100","lookback":144,"volume_min":0.3,
+     "atr_stop_mult":2.5,"take_profit_r":4.0,"max_holding_bars":48,"stop_rule":"atr",
+     "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
 ]
 
 # ══════════════════════════════════════════════════════════════════════
@@ -121,6 +119,10 @@ def compute_indicators(df):
     # Recent swing levels — shifted to avoid lookahead, exactly like src.indicators
     df["recent_swing_high"] = h.rolling(20, min_periods=20).max().shift(1)
     df["recent_swing_low"] = l.rolling(20, min_periods=20).min().shift(1)
+    # Keltner Channels for keltner_breakout
+    df["kc_mid"] = _ema(c, 20)
+    df["kc_upper"] = df["kc_mid"] + 2.0 * df["atr14"]
+    df["kc_lower"] = df["kc_mid"] - 2.0 * df["atr14"]
     return df
 
 # ══════════════════════════════════════════════════════════════════════
@@ -213,6 +215,12 @@ def check_entry(row, prev_row, side, exp, df=None):
         target = safe_float(row[target_col])
         tol = exp.get("tolerance_pct", 0.006)
         return near(row["close"], target, tol)
+
+    if family == "keltner_breakout":
+        # Backtest: LONG = close > kc_upper, SHORT = close < kc_lower
+        if side == "LONG":
+            return row["close"] > safe_float(row["kc_upper"])
+        return row["close"] < safe_float(row["kc_lower"])
 
     return False
 
