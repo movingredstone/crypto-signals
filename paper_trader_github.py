@@ -1,7 +1,11 @@
 """
-GitHub Actions Paper Trader v3 — $330 S&P500-Beater Candidate Portfolio
+GitHub Actions Paper Trader v4 — $330 High-Vol Universal Paper Portfolio
 Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
+
+Portfolio source: high-vol 50-coin universal hunt + stage-2 walk-forward
+(results/optimization/high_vol_stage2_walk_forward_results.csv).
+Paper only; not live-trading permission.
 """
 import json, os, sys, time, requests, csv, math
 import pandas as pd
@@ -24,20 +28,24 @@ def slippage_rate(symbol):
     return SLIPPAGE_BY_SYMBOL.get(symbol, DEFAULT_SLIPPAGE)
 
 STRATEGIES = [
-    {"name":"HBAR macd_momentum/8h","symbol":"HBARUSDT","interval":"8h","alloc":110.0,
-     "family":"macd_momentum","direction_filter":"ema200","lookback":20,"volume_min":1.0,
-     "atr_stop_mult":2.0,"take_profit_r":2.0,"max_holding_bars":12,"stop_rule":"atr",
-     "adx_min":0,"regime":"low_vol","partial_tp_frac":0.5},
-    {"name":"AVAX trend_pullback/8h","symbol":"AVAXUSDT","interval":"8h","alloc":110.0,
-     "family":"trend_pullback","direction_filter":"mtf_trend","lookback":48,"volume_min":0.7,
-     "atr_stop_mult":1.5,"take_profit_r":3.0,"max_holding_bars":24,"stop_rule":"atr",
-     "adx_min":20,"regime":"any","trailing_atr_mult":2.0,"partial_tp_frac":0.5,
-     "tolerance_pct":0.006,"pullback_ref":"ema20"},
-    {"name":"DOT trend_pullback/4h","symbol":"DOTUSDT","interval":"4h","alloc":110.0,
-     "family":"trend_pullback","direction_filter":"ema200","lookback":144,"volume_min":1.0,
-     "atr_stop_mult":4.0,"take_profit_r":3.0,"max_holding_bars":72,"stop_rule":"swing",
-     "adx_min":20,"regime":"low_vol","trailing_atr_mult":3.0,"partial_tp_frac":0.5,
-     "tolerance_pct":0.006,"pullback_ref":"ema20"},
+    # High-vol universal deployable-only WF candidates. $330 / 4 = $82.50 each.
+    # Avoid mtf_trend candidates here because standalone paper trader does not build htf_trend.
+    {"name":"UNI macd_momentum/4h","symbol":"UNIUSDT","interval":"4h","alloc":82.5,
+     "family":"macd_momentum","direction_filter":"ema_stack","lookback":48,"volume_min":0.7,
+     "atr_stop_mult":2.5,"take_profit_r":3.0,"max_holding_bars":96,"stop_rule":"atr",
+     "adx_min":15,"regime":"high_vol","partial_tp_frac":0.5},
+    {"name":"NEAR macd_momentum/8h","symbol":"NEARUSDT","interval":"8h","alloc":82.5,
+     "family":"macd_momentum","direction_filter":"ema_fast_stack","lookback":20,"volume_min":1.0,
+     "atr_stop_mult":1.0,"take_profit_r":3.0,"max_holding_bars":72,"stop_rule":"atr",
+     "adx_min":0,"regime":"low_vol","trailing_atr_mult":2.0,"partial_tp_frac":0.5},
+    {"name":"SOL macd_momentum/8h","symbol":"SOLUSDT","interval":"8h","alloc":82.5,
+     "family":"macd_momentum","direction_filter":"price_ema100","lookback":48,"volume_min":1.0,
+     "atr_stop_mult":1.0,"take_profit_r":2.0,"max_holding_bars":96,"stop_rule":"atr",
+     "adx_min":0,"regime":"low_vol","partial_tp_r":1.0,"partial_tp_frac":0.5},
+    {"name":"ADA macd_momentum/4h","symbol":"ADAUSDT","interval":"4h","alloc":82.5,
+     "family":"macd_momentum","direction_filter":"none","lookback":144,"volume_min":0.7,
+     "atr_stop_mult":2.0,"take_profit_r":3.0,"max_holding_bars":48,"stop_rule":"swing",
+     "adx_min":20,"regime":"any","trailing_atr_mult":2.0,"partial_tp_r":1.0,"partial_tp_frac":0.5},
 ]
 
 # ══════════════════════════════════════════════════════════════════════
