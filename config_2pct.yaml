@@ -1,0 +1,53 @@
+project_name: investmentsystem
+mode: research
+
+telegram:
+  bot_token_env: TELEGRAM_BOT_TOKEN
+  allowed_chat_id_env: TELEGRAM_ALLOWED_CHAT_ID
+
+backtest:
+  start_date: "2023-01-01"
+  end_date: "2026-06-01"
+  initial_capital: 10000
+  score_threshold: 70
+
+risk:
+  risk_per_trade: 0.02
+  max_leverage: 2
+  daily_loss_limit: 0.01
+  weekly_loss_limit: 0.03
+  max_trades_per_day: 3
+  max_open_positions: 1
+  min_stop_distance_pct: 0.001
+
+fees:
+  maker: 0.0002
+  taker: 0.0005
+
+slippage:
+  BTCUSDT: 0.0002
+  ETHUSDT: 0.0003
+  default: 0.0004
+
+deepseek_cost:
+  enabled: true
+  model: "later"
+  input_cost_per_1m_tokens: 0.14
+  output_cost_per_1m_tokens: 0.28
+  assumed_input_tokens_per_call: 1500
+  assumed_output_tokens_per_call: 300
+
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+
+intervals:
+  - 15m
+  - 1h
+  - 4h
+
+# Allowlisted assistant commands. Only these named commands can be launched from
+# Telegram. The chat never supplies the command string — only the name. Add new
+# entries here to grant new capabilities. Empty by default — you add commands
+# as needed.
+commands: {}

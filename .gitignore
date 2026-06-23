@@ -1,7 +1,10 @@
 .venv/
 data/
 results/
+logs/
+.claude/
 __pycache__/
 *.pyc
 .DS_Store
 .env
+*.bak
