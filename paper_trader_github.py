@@ -1,5 +1,5 @@
 """
-GitHub Actions Paper Trader v3 — $330 S&P500-Beater Candidate Portfolio
+GitHub Actions Paper Trader v3 — $1000 TVT-verified trend portfolio
 Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
 """
@@ -14,7 +14,7 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 BINANCE_BASE = "https://fapi.binance.com"
 STATE_FILE = "paper_state.json"
 TRADE_LOG_CSV = "paper_trades.csv"
-TOTAL_ALLOC = 330.0
+TOTAL_ALLOC = 1000.0
 RISK_PER_TRADE = 0.05
 FEE_RATE = 0.0005        # config.yaml fees.taker
 DEFAULT_SLIPPAGE = 0.0004 # config.yaml slippage.default
@@ -339,16 +339,32 @@ def empty_state():
         "last_run": None,
     }
 
+def normalize_state(state):
+    """Backfill missing fields so old committed paper_state.json files remain usable.
+
+    GitHub Actions persists state by committing paper_state.json. Older versions can
+    have a newer version number but still miss fields introduced later, so migration
+    must be key-based rather than version-only.
+    """
+    defaults = empty_state()
+    for key, value in defaults.items():
+        state.setdefault(key, value)
+    if not isinstance(state.get("positions"), list):
+        state["positions"] = []
+    if not isinstance(state.get("closed_trades"), list):
+        state["closed_trades"] = []
+    if not isinstance(state.get("signal_log"), list):
+        state["signal_log"] = []
+    if not isinstance(state.get("equity_curve"), list):
+        state["equity_curve"] = []
+    state["peak_balance"] = state.get("peak_balance") or state.get("balance") or state.get("initial_balance") or TOTAL_ALLOC
+    state["version"] = max(int(state.get("version") or 1), defaults["version"])
+    return state
+
 def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
-            s = json.load(f)
-        if s.get("version",1) < 2:
-            s["peak_balance"] = s.get("balance", s.get("initial_balance", TOTAL_ALLOC))
-            s["signal_log"] = []
-            s["equity_curve"] = []
-            s["version"] = 2
-        return s
+            return normalize_state(json.load(f))
     return empty_state()
 
 def save_state(state):
@@ -362,11 +378,14 @@ def commit_state():
     actor = os.environ.get("GITHUB_ACTOR","paper-trader")
     os.system(f"git config user.name '{actor}'")
     os.system(f"git config user.email '{actor}@users.noreply.github.com'")
-    os.system(f"git remote set-url origin https://x-access-token:***@github.com/{repo}.git")
-    os.system(f"git add {STATE_FILE} {TRADE_LOG_CSV}")
+    os.system(f"git remote set-url origin https://x-access-token:{token}@github.com/{repo}.git")
+    os.system(f"git add {STATE_FILE}")
+    if os.path.exists(TRADE_LOG_CSV):
+        os.system(f"git add {TRADE_LOG_CSV}")
     if os.system("git diff --cached --quiet") != 0:
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
         os.system(f"git commit -m 'paper: update [{ts}]'")
+        os.system("git pull --rebase origin main")
         os.system("git push")
 
 # ══════════════════════════════════════════════════════════════════════

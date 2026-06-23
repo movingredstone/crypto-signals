@@ -6,5 +6,6 @@
   "positions": [],
   "closed_trades": [],
   "signal_log": [],
+  "equity_curve": [],
   "last_run": null
 }
