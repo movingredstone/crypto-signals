@@ -6,6 +6,12 @@
   "positions": [],
   "closed_trades": [],
   "signal_log": [],
-  "equity_curve": [],
-  "last_run": null
+  "equity_curve": [
+    {
+      "date": "2026-06-23",
+      "balance": 1000.0,
+      "positions": 0
+    }
+  ],
+  "last_run": "2026-06-23T11:32:11.833199+00:00"
 }
