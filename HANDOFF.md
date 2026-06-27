@@ -1,16 +1,31 @@
 # Crypto Paper Trading System — Handoff for Verification
 
+> ⚠ AUDITED & REWRITTEN 2026-06-27. Read `AUDIT_CHANGES.md` first — it lists
+> exactly what changed and why. The portfolio below was STALE (old $330 /
+> DOGE-8h / AVAX set) and did not match deployed code; it is now corrected to
+> the audited 3-strategy / $1000 / 1%-risk portfolio.
+
 ## What This Is
-A $330 paper trading system running on GitHub Actions, executing 3 backtest-selected crypto futures strategies. Every 4 hours: fetch Binance data → compute indicators → check positions → check signals → Telegram report → commit state.
+A $1000 paper trading system on GitHub Actions, executing 3 backtest-selected
+crypto futures strategies. Every 4 hours: fetch Binance data → compute
+indicators → check positions → check signals → Telegram report → commit state.
 
 **Repo:** https://github.com/movingredstone/crypto-signals
 **Local:** ~/Desktop/hermes/investmentsystem
 
 ## Current State
 - Deployed and operational. Telegram reports working.
-- No trades yet. No open positions. Balance: $330.00
+- No trades yet. No open positions. Balance: $1000.00
 - Current implementation: `paper_trader_github.py`
 - Legacy simple checker: `paper_signal.py` is NOT used.
+
+## Risk Model (audited)
+- `RISK_PER_TRADE = 0.01` (was 0.05 — 5% was a leverage illusion, see AUDIT_CHANGES.md)
+- `MAX_LEVERAGE = 2.0` — notional capped at alloc×2
+- `MAX_CONCURRENT_POSITIONS = 3`
+- `MAX_PORTFOLIO_RISK = 0.04` — Σ(open risk_dollar) ≤ 4% of $1000
+- `PAUSE_DRAWDOWN = 0.15` — new entries halt while drawdown ≤ −15%
+- NOTE: the trader hardcodes risk; `config.yaml` risk settings do NOT drive it.
 
 ## Important Clarification
 The trained/backtested DATA is not copied into the algorithm. What must be copied is:
@@ -31,54 +46,29 @@ So the verification question is: “Did the live paper trader implement the sele
 
 If original optimization CSV/stress CSV is available, extract `params_json` directly from that CSV and compare against `STRATEGIES`. If CSV is not available, use the templates above as current source of truth.
 
-## 3 Strategy Parameters
+## 3 Strategy Parameters (audited 2026-06-27 — must match `STRATEGIES`)
+All 4h, macd_momentum, trailing_atr_mult 3.0, partial_tp_frac 0.5, risk = 1%.
 
-### DOGEUSDT macd_momentum/8h
-- allocation: 110
-- risk: 5%
-- direction_filter: price_ema100
-- lookback: 48
-- volume_min: 1.2
-- atr_stop_mult: 2.0
-- take_profit_r: 3.0
-- max_holding_bars: 12
-- stop_rule: swing
-- adx_min: 20
-- regime: low_vol
-- breakeven_r: 1.0
-- partial_tp_r: 1.0
-- partial_tp_frac: 0.5
+### SUIUSDT macd_momentum/4h — alloc 400
+- direction_filter: ema200 | lookback: 200 | volume_min: 0.3
+- atr_stop_mult: 2.5 | take_profit_r: 10.0 | max_holding_bars: 48
+- stop_rule: atr | adx_min: 15 | regime: any
 
-### SUIUSDT macd_momentum/4h
-- allocation: 110
-- risk: 5%
-- direction_filter: ema_fast_stack
-- lookback: 48
-- volume_min: 2.0
-- atr_stop_mult: 3.0
-- take_profit_r: 4.0
-- max_holding_bars: 24
-- stop_rule: swing
-- adx_min: 20
-- regime: any
-- partial_tp_r: 1.0
-- partial_tp_frac: 0.5
+### XRPUSDT macd_momentum/4h — alloc 300
+- direction_filter: price_ema100 | lookback: 96 | volume_min: 0.0
+- atr_stop_mult: 2.5 | take_profit_r: 10.0 | max_holding_bars: 144
+- stop_rule: atr | adx_min: 15 | regime: any
 
-### AVAXUSDT trend_pullback/8h
-- allocation: 110
-- risk: 5%
-- direction_filter: price_ema100
-- lookback: 48
-- volume_min: 1.2
-- atr_stop_mult: 2.0
-- take_profit_r: 5.0
-- max_holding_bars: 12
-- stop_rule: swing
-- adx_min: 0
-- regime: low_vol
-- pullback_ref: ema20
-- partial_tp_frac: 0.5
-- tolerance_pct: 0.006
+### DOGEUSDT macd_momentum/4h — alloc 300
+- direction_filter: price_ema100 | lookback: 96 | volume_min: 0.5
+- atr_stop_mult: 5.0 | take_profit_r: 4.0 | max_holding_bars: 48
+- stop_rule: swing | adx_min: 15 | regime: any
+
+### Removed in audit
+- **SUI #2** (SUIUSDT, alloc 200): same symbol as SUI #1, ≈1.0 correlation,
+  doubled directional exposure.
+- **LINK** (LINKUSDT, alloc 150): PF 1.26 over 32 trades = marginal; high_vol
+  regime gate rarely fires → near-dead.
 
 ## Backtest Logic That Must Match
 

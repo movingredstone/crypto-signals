@@ -15,7 +15,15 @@ BINANCE_BASE = "https://fapi.binance.com"
 STATE_FILE = "paper_state.json"
 TRADE_LOG_CSV = "paper_trades.csv"
 TOTAL_ALLOC = 1000.0
-RISK_PER_TRADE = 0.05
+# --- Risk (audited 2026-06-27) ---------------------------------------------
+# Was 0.05 (5%) — that was a 10x of the research 0.5% baseline. Beating S&P at
+# 5% was a pure leverage illusion (Sharpe unchanged) with real ruin risk and
+# NO portfolio-level guard in code. Cut to 1% and added hard portfolio caps.
+RISK_PER_TRADE = 0.01            # per-trade risk fraction of strategy alloc
+MAX_LEVERAGE = 2.0               # notional cap = alloc * MAX_LEVERAGE
+MAX_CONCURRENT_POSITIONS = 3     # hard cap on simultaneous open positions
+MAX_PORTFOLIO_RISK = 0.04        # sum(open risk_dollar) <= TOTAL_ALLOC * this
+PAUSE_DRAWDOWN = 0.15            # halt NEW entries while DD from peak <= -15%
 FEE_RATE = 0.0005        # config.yaml fees.taker
 DEFAULT_SLIPPAGE = 0.0004 # config.yaml slippage.default
 SLIPPAGE_BY_SYMBOL = {"BTCUSDT": 0.0002, "ETHUSDT": 0.0003}
@@ -23,24 +31,20 @@ SLIPPAGE_BY_SYMBOL = {"BTCUSDT": 0.0002, "ETHUSDT": 0.0003}
 def slippage_rate(symbol):
     return SLIPPAGE_BY_SYMBOL.get(symbol, DEFAULT_SLIPPAGE)
 
+# Audited 2026-06-27. Removed SUI #2 (same symbol as SUI #1 -> ~1.0 correlation,
+# doubled directional exposure) and LINK (PF 1.26 marginal, high_vol gate rarely
+# fires -> near-dead). Kept the 3 decorrelated survivors and re-weighted to
+# $1000. Params unchanged from research; ONLY count/alloc/risk changed.
 STRATEGIES = [
-    {"name":"SUI macd_momentum/4h","symbol":"SUIUSDT","interval":"4h","alloc":350.0,
+    {"name":"SUI macd_momentum/4h","symbol":"SUIUSDT","interval":"4h","alloc":400.0,
      "family":"macd_momentum","direction_filter":"ema200","lookback":200,"volume_min":0.3,
      "atr_stop_mult":2.5,"take_profit_r":10.0,"max_holding_bars":48,"stop_rule":"atr",
      "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
-    {"name":"SUI macd_momentum/4h #2","symbol":"SUIUSDT","interval":"4h","alloc":200.0,
-     "family":"macd_momentum","direction_filter":"ema200","lookback":144,"volume_min":0.3,
-     "atr_stop_mult":4.0,"take_profit_r":6.0,"max_holding_bars":144,"stop_rule":"swing",
-     "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
-    {"name":"LINK macd_momentum/4h","symbol":"LINKUSDT","interval":"4h","alloc":150.0,
-     "family":"macd_momentum","direction_filter":"ema200","lookback":144,"volume_min":0.5,
-     "atr_stop_mult":2.5,"take_profit_r":8.0,"max_holding_bars":48,"stop_rule":"swing",
-     "adx_min":20,"regime":"high_vol","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
-    {"name":"XRP macd_momentum/4h","symbol":"XRPUSDT","interval":"4h","alloc":150.0,
+    {"name":"XRP macd_momentum/4h","symbol":"XRPUSDT","interval":"4h","alloc":300.0,
      "family":"macd_momentum","direction_filter":"price_ema100","lookback":96,"volume_min":0.0,
      "atr_stop_mult":2.5,"take_profit_r":10.0,"max_holding_bars":144,"stop_rule":"atr",
      "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
-    {"name":"DOGE macd_momentum/4h","symbol":"DOGEUSDT","interval":"4h","alloc":150.0,
+    {"name":"DOGE macd_momentum/4h","symbol":"DOGEUSDT","interval":"4h","alloc":300.0,
      "family":"macd_momentum","direction_filter":"price_ema100","lookback":96,"volume_min":0.5,
      "atr_stop_mult":5.0,"take_profit_r":4.0,"max_holding_bars":48,"stop_rule":"swing",
      "adx_min":15,"regime":"any","trailing_atr_mult":3.0,"partial_tp_frac":0.5},
@@ -391,9 +395,14 @@ def commit_state():
 # ══════════════════════════════════════════════════════════════════════
 # Position Sizing
 # ══════════════════════════════════════════════════════════════════════
-def size_position(alloc, risk_pct, entry, stop):
+def size_position(alloc, risk_pct, entry, stop, max_leverage=MAX_LEVERAGE):
     sp = abs(entry-stop)/entry
-    return round(alloc*risk_pct/sp, 2) if sp > 0 else 0
+    if sp <= 0:
+        return 0.0
+    notional = alloc*risk_pct/sp
+    # Tight stops can blow notional past the allocation. Cap at alloc*leverage
+    # so a single 1% risk trade can never become a leveraged bomb.
+    return round(min(notional, alloc*max_leverage), 2)
 
 # ══════════════════════════════════════════════════════════════════════
 # Trade Log CSV
@@ -630,11 +639,22 @@ def main():
                 total_value += upnl
         state["equity_curve"].append({"date":today,"balance":round(total_value,2),"positions":len(state["positions"])})
 
-    # Enter new positions
+    # Enter new positions — gated by portfolio-level risk guards.
+    peak = state.get("peak_balance", TOTAL_ALLOC) or TOTAL_ALLOC
+    dd = (state["balance"] - peak) / peak
+    paused = dd <= -PAUSE_DRAWDOWN
+    skipped = []
     for sig in new_signals:
         sname = sig.get("_strategy_name")
         s = next(x for x in STRATEGIES if x["name"] == sname)
         alloc = s["alloc"]; risk = alloc * RISK_PER_TRADE
+        if paused:
+            skipped.append((sname, f"paused DD {dd*100:.1f}%")); continue
+        if len(state["positions"]) >= MAX_CONCURRENT_POSITIONS:
+            skipped.append((sname, "max concurrent")); continue
+        open_risk = sum(float(p.get("risk_dollar", 0)) for p in state["positions"])
+        if open_risk + risk > TOTAL_ALLOC * MAX_PORTFOLIO_RISK:
+            skipped.append((sname, "portfolio risk cap")); continue
         pos_size = size_position(alloc, RISK_PER_TRADE, sig["entry"], sig["stop"])
         df = kline_data[s["symbol"]]
         row = df.iloc[-2]  # signal bar, matching get_signals()/backtest decision bar
@@ -671,6 +691,10 @@ def main():
     dd = (total_value - state["peak_balance"])/state["peak_balance"]*100 if state.get("peak_balance") else 0
     e = "🟢" if pnl_total >= 0 else "🔴"
     lines.append(f"{e} Balance: ${total_value:.2f} | P&L: ${pnl_total:+.2f} ({pnl_pct:+.1f}%) | DD: {dd:.1f}%")
+    lines.append(f"🛡 risk/trade {RISK_PER_TRADE*100:.0f}% | concurrent {len(state['positions'])}/{MAX_CONCURRENT_POSITIONS} | port-risk cap {MAX_PORTFOLIO_RISK*100:.0f}%"
+                 + (f" | ⏸ PAUSED" if paused else ""))
+    if skipped:
+        lines.append("⚠ skipped: " + ", ".join(f"{n}({r})" for n, r in skipped))
     lines.append("")
 
     if closed:
