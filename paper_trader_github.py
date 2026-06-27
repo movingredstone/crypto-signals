@@ -274,6 +274,27 @@ def make_stop_take(row, side, entry, exp):
     take = entry - tp_r * risk
     return round(stop, 4), round(take, 4)
 
+def why_blocked_confirmation(row, exp):
+    """Return the first confirmation gate that fails, for observability."""
+    vr = safe_float(row["volume_ratio"], 0)
+    if vr < exp.get("volume_min", 0.0):
+        return f"vol {vr:.2f}<{exp.get('volume_min',0)}"
+    atr_pct = safe_float(row.get("atr_pct", 50), 50)
+    if atr_pct < exp.get("atr_pct_min", 0) or atr_pct > exp.get("atr_pct_max", 100):
+        return f"atr_pct {atr_pct:.0f} out of range"
+    adx_min = exp.get("adx_min", 0)
+    if adx_min and adx_min > 0:
+        adx = safe_float(row.get("adx14"), 0)
+        if not math.isfinite(adx) or adx < adx_min:
+            return f"adx {adx:.0f}<{adx_min}"
+    regime = exp.get("regime", "any")
+    if regime and regime != "any":
+        rv_pct = safe_float(row.get("rv_pct"), 50)
+        cur = "low_vol" if rv_pct <= 50 else "high_vol"
+        if cur != regime:
+            return f"regime {cur}!={regime} (rv_pct {rv_pct:.0f})"
+    return "confirmation"
+
 def get_signals(df, exp):
     """Generate signals using backtest-matched logic. Returns (signals, snapshot)."""
     # Ensure indicators are computed
@@ -303,17 +324,23 @@ def get_signals(df, exp):
 
     # Pre-checks (confirmation)
     if not confirmation_ok(row, exp):
+        snap["block"] = why_blocked_confirmation(row, exp)
         return [], snap
 
     dfilter = exp.get("direction_filter", "none")
     signals = []
     slip = slippage_rate(exp["symbol"])
     raw_entry = safe_float(entry_row["open"])
+    dir_ok = False; trig_ok = False
 
     for side in ["LONG", "SHORT"]:
-        if not direction_allowed(row, side, dfilter):
+        da = direction_allowed(row, side, dfilter)
+        dir_ok = dir_ok or da
+        if not da:
             continue
-        if not check_entry(row, prev_row, side, exp, df):
+        ce = check_entry(row, prev_row, side, exp, df)
+        trig_ok = trig_ok or ce
+        if not ce:
             continue
 
         entry = raw_entry * (1 + slip) if side == "LONG" else raw_entry * (1 - slip)
@@ -325,6 +352,10 @@ def get_signals(df, exp):
                 "entry_bar_time": str(entry_row.name), "signal_bar_time": str(row.name),
             })
 
+    if not signals:
+        snap["block"] = ("direction filter (price vs ema)" if not dir_ok
+                         else "macd momentum trigger" if not trig_ok
+                         else "stop/take invalid")
     return signals, snap
 
 # ══════════════════════════════════════════════════════════════════════
@@ -601,12 +632,14 @@ def main():
     closed = check_positions(state, kline_data)
 
     # Check new signals + log them
-    new_signals = []; signal_entries = []
+    new_signals = []; signal_entries = []; blocks = []
     for s in STRATEGIES:
         if s["symbol"] not in kline_data: continue
         already_in = any(p["strategy"] == s["name"] for p in state["positions"])
         try:
             signals, snap = get_signals(kline_data[s["symbol"]], s)
+            if not signals and not already_in:
+                blocks.append((s["name"], snap.get("block", "?")))
             for sig in signals:
                 entry = {
                     "time": now.isoformat(), "strategy": s["name"],
@@ -719,7 +752,15 @@ def main():
         lines.append("🎯 Signals:")
         for sig in new_signals:
             lines.append(f"  🚀 {sig.get('_strategy_name','')} {sig['side']} @{sig['entry']} | SL:{sig['stop']} TP:{sig['take']}")
-    elif not state["positions"]:
+        lines.append("")
+    if blocks:
+        # Observability: show which gate blocked each non-firing strategy so
+        # "no signal" is distinguishable from a structural dead gate.
+        lines.append("🔎 Gate blocks:")
+        for name, reason in blocks:
+            lines.append(f"    {name}: {reason}")
+        lines.append("")
+    elif not new_signals and not state["positions"]:
         lines.append("💤 No signals. Normal.")
         lines.append("")
 
