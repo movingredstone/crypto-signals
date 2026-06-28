@@ -12,7 +12,7 @@ Data: spot OHLCV from data-api.binance.vision (fapi is geo-blocked in CI/local).
 Spot vs perp 4h candles differ marginally; this is a robustness check on PF,
 not a P&L reproduction. Caveat noted in output.
 """
-import sys, json, time, urllib.request
+import sys, json, time, urllib.request, urllib.error
 sys.path.insert(0, ".")
 import numpy as np
 import pandas as pd
@@ -51,7 +51,16 @@ def fetch_klines(symbol, interval, start, end):
     rows, cur = [], start_ms
     while cur < end_ms:
         url = f"{VISION}?symbol={symbol}&interval={interval}&startTime={cur}&endTime={end_ms}&limit=1000"
-        data = json.load(urllib.request.urlopen(url, timeout=30))
+        # Retry transient network failures (broken pipe / reset / timeout).
+        data = None
+        for attempt in range(5):
+            try:
+                data = json.load(urllib.request.urlopen(url, timeout=30))
+                break
+            except (urllib.error.URLError, OSError, ConnectionError) as e:
+                if attempt == 4:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
         if not data:
             break
         rows.extend(data)
