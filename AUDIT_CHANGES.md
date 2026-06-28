@@ -73,8 +73,12 @@ overfit + fees. Leverage ≠ edge.
 1. **0 closed trades.** No live evidence yet. Gates may be too tight (price
    below EMA filters). Verify against `src/research_engine.py` whether the live
    signal rate matches backtest signal rate.
-2. **Overfit not retired.** Need TVT split + trade-level bootstrap PF
-   confidence intervals before trusting per-strategy PF.
+2. ~~Overfit not retired. Need trade-level bootstrap PF CI.~~ **DONE — see
+   `BOOTSTRAP_PF.md`.** Result: only **SUI #1** has a robust PF>1 (95% CI
+   [1.024, 2.367], barely); **XRP and DOGE are fragile** (CIs include ≤1; XRP
+   has ~26% chance of being net-losing). The claimed forward PFs (1.919 /
+   1.332 / 1.66) sit at only 13–21% bootstrap probability — they were an
+   optimistic window, not the expected value. TVT split still pending.
 3. **config.yaml is decoupled** from the trader (BTC/ETH research config vs
    SUI/XRP/DOGE live). Decide: drive the trader from config, or document the
    split. `config_5pct_tmp.yaml` is a dangerous leftover — delete it.
