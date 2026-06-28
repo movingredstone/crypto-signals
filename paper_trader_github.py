@@ -12,6 +12,7 @@ from pathlib import Path
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 BINANCE_BASE = "https://fapi.binance.com"
+BINANCE_SPOT_DATA_BASE = "https://data-api.binance.vision"
 STATE_FILE = "paper_state.json"
 TRADE_LOG_CSV = "paper_trades.csv"
 TOTAL_ALLOC = 1000.0
@@ -54,16 +55,42 @@ STRATEGIES = [
 # Data Fetching
 # ══════════════════════════════════════════════════════════════════════
 def fetch_klines(symbol, interval, limit=500):
-    url = f"{BINANCE_BASE}/fapi/v1/klines"
-    resp = requests.get(url, params={"symbol":symbol,"interval":interval,"limit":limit}, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
-    if not isinstance(data, list) or len(data) == 0:
-        raise RuntimeError(f"No data for {symbol}")
+    """Fetch klines.
+
+    Primary source is Binance futures. Some GitHub/local regions return HTTP 451
+    for fapi/api.binance.com, so fall back to Binance's public spot data API.
+    The deployed bootstrap audit used this data-api.binance.vision path when fapi
+    was region-blocked; surfacing the fallback keeps the live runner observable.
+    """
+    sources = [
+        (f"{BINANCE_BASE}/fapi/v1/klines", "futures"),
+        (f"{BINANCE_SPOT_DATA_BASE}/api/v3/klines", "spot-data-api"),
+    ]
+    last_error = None
+    data = None
+    source_used = None
+    for url, source_name in sources:
+        for attempt in range(2):
+            try:
+                resp = requests.get(url, params={"symbol":symbol,"interval":interval,"limit":limit}, timeout=30)
+                resp.raise_for_status()
+                candidate = resp.json()
+                if not isinstance(candidate, list) or len(candidate) == 0:
+                    raise RuntimeError(f"No data for {symbol} from {source_name}")
+                data = candidate
+                source_used = source_name
+                break
+            except Exception as e:
+                last_error = e
+        if data is not None:
+            break
+    if data is None:
+        raise RuntimeError(f"No kline data for {symbol}; last_error={last_error}")
     df = pd.DataFrame(data, columns=[
         "open_time","open","high","low","close","volume",
         "close_time","quote_vol","trades","taker_buy_vol","taker_buy_quote_vol","ignore"
     ])
+    df.attrs["source"] = source_used
     for col in ["open","high","low","close","volume"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df["open_time"] = pd.to_datetime(df["open_time"], unit="ms", utc=True)
@@ -615,16 +642,17 @@ def main():
 
     if state.get("last_run"):
         last = datetime.fromisoformat(state["last_run"])
-        if (now - last).total_seconds() < 300:
+        if (now - last).total_seconds() < 300 and os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch":
             print("Skipping — last run too recent"); return
 
     # Fetch data
-    kline_data = {}; errors = []
+    kline_data = {}; errors = []; data_sources = {}
     for s in STRATEGIES:
         try:
             df = fetch_klines(s["symbol"], s["interval"])
             df = compute_indicators(df)
             kline_data[s["symbol"]] = df
+            data_sources[s["symbol"]] = df.attrs.get("source", "unknown")
         except Exception as e:
             errors.append(f"{s['name']}: {e}")
 
@@ -726,6 +754,13 @@ def main():
     lines.append(f"{e} Balance: ${total_value:.2f} | P&L: ${pnl_total:+.2f} ({pnl_pct:+.1f}%) | DD: {dd:.1f}%")
     lines.append(f"🛡 risk/trade {RISK_PER_TRADE*100:.0f}% | concurrent {len(state['positions'])}/{MAX_CONCURRENT_POSITIONS} | port-risk cap {MAX_PORTFOLIO_RISK*100:.0f}%"
                  + (f" | ⏸ PAUSED" if paused else ""))
+    if data_sources:
+        src_summary = ", ".join(f"{sym}:{src}" for sym, src in sorted(data_sources.items()))
+        lines.append(f"🧾 Data: {src_summary}")
+    if errors:
+        lines.append("⚠ Data/errors:")
+        for err in errors:
+            lines.append(f"    {err}")
     if skipped:
         lines.append("⚠ skipped: " + ", ".join(f"{n}({r})" for n, r in skipped))
     lines.append("")
@@ -760,7 +795,7 @@ def main():
         for name, reason in blocks:
             lines.append(f"    {name}: {reason}")
         lines.append("")
-    elif not new_signals and not state["positions"]:
+    elif not new_signals and not state["positions"] and not errors:
         lines.append("💤 No signals. Normal.")
         lines.append("")
 
