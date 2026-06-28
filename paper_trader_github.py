@@ -4,10 +4,30 @@ Signal logic matched to backtest engine (research_engine.py).
 Records: trade history, signal log, equity curve, market context per entry.
 """
 import json, os, sys, time, requests, csv, math
+import builtins
 import pandas as pd
 import numpy as np
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+# ── Broken-pipe hardening (EPIPE / errno 32) ───────────────────────────────
+# If stdout is piped to a reader that exits early (head/less) or a CI log
+# stream closes, a raw print() raises BrokenPipeError and would abort the run
+# BEFORE state is saved/committed. Python's default keeps SIGPIPE ignored so
+# the write surfaces as a catchable BrokenPipeError (do NOT set SIG_DFL — that
+# turns it into a fatal signal that kills the process before state is saved).
+# Route output through safe_print so a dead pipe is swallowed and the run
+# continues to persist state.
+def safe_print(*args, **kwargs):
+    try:
+        builtins.print(*args, **kwargs)
+        sys.stdout.flush()
+    except (BrokenPipeError, OSError):
+        try:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+        except Exception:
+            pass
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -629,9 +649,9 @@ def send_telegram(text):
     try:
         r = requests.post(url, json={"chat_id":TELEGRAM_CHAT_ID,"text":text}, timeout=10)
         if r.status_code != 200:
-            print(f"Telegram error {r.status_code}: {r.text[:200]}")
+            safe_print(f"Telegram error {r.status_code}: {r.text[:200]}")
     except Exception as e:
-        print(f"Telegram exception: {e}")
+        safe_print(f"Telegram exception: {e}")
 
 # ══════════════════════════════════════════════════════════════════════
 # Main
@@ -643,7 +663,7 @@ def main():
     if state.get("last_run"):
         last = datetime.fromisoformat(state["last_run"])
         if (now - last).total_seconds() < 300 and os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch":
-            print("Skipping — last run too recent"); return
+            safe_print("Skipping — last run too recent"); return
 
     # Fetch data
     kline_data = {}; errors = []; data_sources = {}
@@ -831,11 +851,12 @@ def main():
                 lines.append(f"    {r}: {st['t']} trades, WR {rwr:.0f}%, P&L ${st['pnl']:+.2f}")
 
     msg = "\n".join(lines)
-    print(msg)
-    send_telegram(msg)
-
+    # Persist state BEFORE any print/telegram so a broken pipe or network error
+    # can never lose the run's state. commit_state pushes the saved file last.
     state["last_run"] = now.isoformat()
     save_state(state)
+    safe_print(msg)
+    send_telegram(msg)
     commit_state()
 
 if __name__ == "__main__":
