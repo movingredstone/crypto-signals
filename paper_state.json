@@ -1,34 +1,9 @@
 {
   "version": 3,
-  "balance": 997.0131329025294,
+  "balance": 994.0279360085862,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
   "positions": [
-    {
-      "strategy": "XRP macd_momentum/4h",
-      "symbol": "XRPUSDT",
-      "side": "SHORT",
-      "entry": 1.0335864,
-      "raw_entry": 1.034,
-      "stop": 1.0795,
-      "take": 0.5749,
-      "alloc": 300.0,
-      "notional": 67.53,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.0444216371268043,
-      "max_bars": 144,
-      "bars_held": 10,
-      "entry_time": "2026-06-30T17:56:39.884548+00:00",
-      "signal_bar_time": "2026-06-30 12:00:00+00:00",
-      "entry_bar_time": "2026-06-30 16:00:00+00:00",
-      "entry_regime": "low_vol",
-      "entry_adx": 24.4,
-      "entry_atr": 0.0183,
-      "entry_vol_ratio": 1.83,
-      "fills_seen": []
-    },
     {
       "strategy": "DOGE macd_momentum/4h",
       "symbol": "DOGEUSDT",
@@ -44,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.08059621188794436,
       "max_bars": 48,
-      "bars_held": 10,
+      "bars_held": 11,
       "entry_time": "2026-06-30T17:56:39.884548+00:00",
       "signal_bar_time": "2026-06-30 12:00:00+00:00",
       "entry_bar_time": "2026-06-30 16:00:00+00:00",
@@ -79,6 +54,30 @@
       "notional": 63.92,
       "risk_dollar": 4.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.7195126040630331, \"reason\": \"stop_loss\", \"bar\": 498}]"
+    },
+    {
+      "exit_time": "2026-07-02T10:42:29.478839+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "SHORT",
+      "entry": 1.0335864,
+      "exit": 1.07824301,
+      "exit_reason": "stop_loss",
+      "pnl": -2.99,
+      "gross_pnl": -2.92,
+      "fee": 0.0675,
+      "slippage_cost": 0.054,
+      "pnl_pct": -4.42,
+      "bars_held": 11,
+      "entry_time": "2026-06-30T17:56:39.884548+00:00",
+      "regime": "low_vol",
+      "adx_entry": 24.4,
+      "atr_entry": 0.0183,
+      "volume_ratio": 1.83,
+      "alloc": 300.0,
+      "notional": 67.53,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 1.0778118844763285, \"reason\": \"stop_loss\", \"bar\": 499}]"
     }
   ],
   "signal_log": [
@@ -231,5 +230,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-07-02T07:34:14.548805+00:00"
+  "last_run": "2026-07-02T10:42:26.405870+00:00"
 }
