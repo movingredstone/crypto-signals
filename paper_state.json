@@ -1,35 +1,9 @@
 {
   "version": 3,
-  "balance": 994.0279360085862,
+  "balance": 991.7841601243723,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
-  "positions": [
-    {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "SHORT",
-      "entry": 0.07070171,
-      "raw_entry": 0.07073,
-      "stop": 0.0764,
-      "take": 0.0477,
-      "alloc": 300.0,
-      "notional": 37.22,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.08059621188794436,
-      "max_bars": 48,
-      "bars_held": 11,
-      "entry_time": "2026-06-30T17:56:39.884548+00:00",
-      "signal_bar_time": "2026-06-30 12:00:00+00:00",
-      "entry_bar_time": "2026-06-30 16:00:00+00:00",
-      "entry_regime": "low_vol",
-      "entry_adx": 53.1,
-      "entry_atr": 0.0014,
-      "entry_vol_ratio": 3.99,
-      "fills_seen": []
-    }
-  ],
+  "positions": [],
   "closed_trades": [
     {
       "exit_time": "2026-07-01T17:58:10.552353+00:00",
@@ -78,6 +52,30 @@
       "notional": 67.53,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 1.0778118844763285, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-07-02T14:04:05.100590+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.07070171,
+      "exit": 0.0748932,
+      "exit_reason": "stop_loss",
+      "pnl": -2.24,
+      "gross_pnl": -2.21,
+      "fee": 0.0372,
+      "slippage_cost": 0.0298,
+      "pnl_pct": -6.03,
+      "bars_held": 12,
+      "entry_time": "2026-06-30T17:56:39.884548+00:00",
+      "regime": "low_vol",
+      "adx_entry": 53.1,
+      "atr_entry": 0.0014,
+      "volume_ratio": 3.99,
+      "alloc": 300.0,
+      "notional": 37.22,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.0748632551392254, \"reason\": \"stop_loss\", \"bar\": 499}]"
     }
   ],
   "signal_log": [
@@ -230,5 +228,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-07-02T10:42:26.405870+00:00"
+  "last_run": "2026-07-02T14:04:01.171837+00:00"
 }
