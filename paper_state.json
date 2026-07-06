@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.0506091265432238,
       "max_bars": 48,
-      "bars_held": 2,
+      "bars_held": 3,
       "entry_time": "2026-07-06T08:22:00.969781+00:00",
       "signal_bar_time": "2026-07-06 04:00:00+00:00",
       "entry_bar_time": "2026-07-06 08:00:00+00:00",
@@ -44,14 +44,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03534638660851169,
       "max_bars": 48,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-07-06T15:36:04.521529+00:00",
       "signal_bar_time": "2026-07-06 08:00:00+00:00",
       "entry_bar_time": "2026-07-06 12:00:00+00:00",
       "entry_regime": "low_vol",
       "entry_adx": 27.9,
       "entry_atr": 0.0013,
-      "entry_vol_ratio": 0.55
+      "entry_vol_ratio": 0.55,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -584,6 +585,22 @@
       "atr_ratio": 0,
       "price": 0.0767,
       "volume_ratio": 0.55
+    },
+    {
+      "time": "2026-07-06T18:11:56.090508+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.0762095,
+      "stop": 0.0794,
+      "take": 0.0635,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 26.2,
+      "atr": 0.0014,
+      "atr_ratio": 0,
+      "price": 0.0762,
+      "volume_ratio": 3.49
     }
   ],
   "equity_curve": [
@@ -658,5 +675,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-07-06T15:36:04.521529+00:00"
+  "last_run": "2026-07-06T18:11:56.090508+00:00"
 }
