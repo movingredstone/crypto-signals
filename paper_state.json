@@ -1,34 +1,9 @@
 {
   "version": 3,
-  "balance": 993.1448283279948,
+  "balance": 989.643162004278,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
   "positions": [
-    {
-      "strategy": "SUI macd_momentum/4h",
-      "symbol": "SUIUSDT",
-      "side": "LONG",
-      "entry": 0.76940764,
-      "raw_entry": 0.7691,
-      "stop": 0.7299,
-      "take": 1.1648,
-      "alloc": 400.0,
-      "notional": 77.9,
-      "risk_dollar": 4.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.05134812542282522,
-      "max_bars": 48,
-      "bars_held": 14,
-      "entry_time": "2026-07-03T21:08:43.765800+00:00",
-      "signal_bar_time": "2026-07-03 16:00:00+00:00",
-      "entry_bar_time": "2026-07-03 20:00:00+00:00",
-      "entry_regime": "low_vol",
-      "entry_adx": 33.2,
-      "entry_atr": 0.0158,
-      "entry_vol_ratio": 1.16,
-      "fills_seen": []
-    },
     {
       "strategy": "DOGE macd_momentum/4h",
       "symbol": "DOGEUSDT",
@@ -44,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.09925302885710856,
       "max_bars": 48,
-      "bars_held": 9,
+      "bars_held": 11,
       "entry_time": "2026-07-04T17:07:58.647937+00:00",
       "signal_bar_time": "2026-07-04 12:00:00+00:00",
       "entry_bar_time": "2026-07-04 16:00:00+00:00",
@@ -53,6 +28,30 @@
       "entry_atr": 0.0014,
       "entry_vol_ratio": 1.24,
       "fills_seen": []
+    },
+    {
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.74090352,
+      "raw_entry": 0.7412,
+      "stop": 0.7784,
+      "take": 0.366,
+      "alloc": 400.0,
+      "notional": 79.04,
+      "risk_dollar": 4.0,
+      "fee_rate": 0.0005,
+      "slippage_rate": 0.0004,
+      "stop_pct": 0.0506091265432238,
+      "max_bars": 48,
+      "bars_held": 0,
+      "entry_time": "2026-07-06T08:22:00.969781+00:00",
+      "signal_bar_time": "2026-07-06 04:00:00+00:00",
+      "entry_bar_time": "2026-07-06 08:00:00+00:00",
+      "entry_regime": "low_vol",
+      "entry_adx": 27.6,
+      "entry_atr": 0.015,
+      "entry_vol_ratio": 1.09
     }
   ],
   "closed_trades": [
@@ -151,6 +150,30 @@
       "notional": 72.34,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 1.125341700031579, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-07-06T08:22:03.826436+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 0.76940764,
+      "exit": 0.73559157,
+      "exit_reason": "stop_loss",
+      "pnl": -3.5,
+      "gross_pnl": -3.42,
+      "fee": 0.0779,
+      "slippage_cost": 0.0623,
+      "pnl_pct": -4.5,
+      "bars_held": 16,
+      "entry_time": "2026-07-03T21:08:43.765800+00:00",
+      "regime": "low_vol",
+      "adx_entry": 33.2,
+      "atr_entry": 0.0158,
+      "volume_ratio": 1.16,
+      "alloc": 400.0,
+      "notional": 77.9,
+      "risk_dollar": 4.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.7358859229052025, \"reason\": \"stop_loss\", \"bar\": 498}]"
     }
   ],
   "signal_log": [
@@ -473,6 +496,38 @@
       "atr_ratio": 0,
       "price": 0.7431,
       "volume_ratio": 0.54
+    },
+    {
+      "time": "2026-07-06T08:22:00.969781+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.74090352,
+      "stop": 0.7784,
+      "take": 0.366,
+      "taken": true,
+      "regime": "low_vol",
+      "adx": 27.6,
+      "atr": 0.015,
+      "atr_ratio": 0,
+      "price": 0.7413,
+      "volume_ratio": 1.09
+    },
+    {
+      "time": "2026-07-06T08:22:00.969781+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.07689923,
+      "stop": 0.0794,
+      "take": 0.067,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 28.3,
+      "atr": 0.0013,
+      "atr_ratio": 0,
+      "price": 0.0769,
+      "volume_ratio": 0.72
     }
   ],
   "equity_curve": [
@@ -547,5 +602,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-07-06T03:40:43.170132+00:00"
+  "last_run": "2026-07-06T08:22:00.969781+00:00"
 }
