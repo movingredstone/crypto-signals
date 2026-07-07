@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03534638660851169,
       "max_bars": 48,
-      "bars_held": 3,
+      "bars_held": 4,
       "entry_time": "2026-07-06T15:36:04.521529+00:00",
       "signal_bar_time": "2026-07-06 08:00:00+00:00",
       "entry_bar_time": "2026-07-06 12:00:00+00:00",
@@ -600,6 +600,22 @@
       "atr_ratio": 0,
       "price": 0.0762,
       "volume_ratio": 3.49
+    },
+    {
+      "time": "2026-07-07T03:32:22.611514+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.07662934,
+      "stop": 0.0794,
+      "take": 0.0656,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 23.5,
+      "atr": 0.0014,
+      "atr_ratio": 0,
+      "price": 0.0767,
+      "volume_ratio": 0.88
     }
   ],
   "equity_curve": [
@@ -672,7 +688,12 @@
       "date": "2026-07-06",
       "balance": 990.68,
       "positions": 2
+    },
+    {
+      "date": "2026-07-07",
+      "balance": 987.26,
+      "positions": 1
     }
   ],
-  "last_run": "2026-07-06T21:38:26.172532+00:00"
+  "last_run": "2026-07-07T03:32:22.611514+00:00"
 }
