@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03534638660851169,
       "max_bars": 48,
-      "bars_held": 5,
+      "bars_held": 6,
       "entry_time": "2026-07-06T15:36:04.521529+00:00",
       "signal_bar_time": "2026-07-06 08:00:00+00:00",
       "entry_bar_time": "2026-07-06 12:00:00+00:00",
@@ -44,14 +44,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.05359701340076351,
       "max_bars": 48,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-07-07T07:40:26.968500+00:00",
       "signal_bar_time": "2026-07-07 00:00:00+00:00",
       "entry_bar_time": "2026-07-07 04:00:00+00:00",
       "entry_regime": "low_vol",
       "entry_adx": 21.3,
       "entry_atr": 0.0158,
-      "entry_vol_ratio": 0.73
+      "entry_vol_ratio": 0.73,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -672,6 +673,38 @@
       "atr_ratio": 0,
       "price": 0.0751,
       "volume_ratio": 0.83
+    },
+    {
+      "time": "2026-07-07T10:58:24.399287+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.73750488,
+      "stop": 0.7766,
+      "take": 0.3466,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 20.2,
+      "atr": 0.0156,
+      "atr_ratio": 0,
+      "price": 0.7378,
+      "volume_ratio": 0.61
+    },
+    {
+      "time": "2026-07-07T10:58:24.399287+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.07496,
+      "stop": 0.0794,
+      "take": 0.0573,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 21.3,
+      "atr": 0.0014,
+      "atr_ratio": 0,
+      "price": 0.075,
+      "volume_ratio": 1.13
     }
   ],
   "equity_curve": [
@@ -751,5 +784,5 @@
       "positions": 1
     }
   ],
-  "last_run": "2026-07-07T07:40:26.968500+00:00"
+  "last_run": "2026-07-07T10:58:24.399287+00:00"
 }
