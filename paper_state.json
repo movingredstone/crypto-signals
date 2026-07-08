@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03534638660851169,
       "max_bars": 48,
-      "bars_held": 13,
+      "bars_held": 14,
       "entry_time": "2026-07-06T15:36:04.521529+00:00",
       "signal_bar_time": "2026-07-06 08:00:00+00:00",
       "entry_bar_time": "2026-07-06 12:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.05359701340076351,
       "max_bars": 48,
-      "bars_held": 9,
+      "bars_held": 10,
       "entry_time": "2026-07-07T07:40:26.968500+00:00",
       "signal_bar_time": "2026-07-07 00:00:00+00:00",
       "entry_bar_time": "2026-07-07 04:00:00+00:00",
@@ -69,7 +69,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04367286482938494,
       "max_bars": 144,
-      "bars_held": 4,
+      "bars_held": 5,
       "entry_time": "2026-07-08T02:48:13.165557+00:00",
       "signal_bar_time": "2026-07-07 20:00:00+00:00",
       "entry_bar_time": "2026-07-08 00:00:00+00:00",
@@ -938,6 +938,38 @@
       "atr_ratio": 0,
       "price": 0.0721,
       "volume_ratio": 1.28
+    },
+    {
+      "time": "2026-07-08T17:38:13.870447+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.69912024,
+      "stop": 0.7394,
+      "take": 0.2967,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 19.1,
+      "atr": 0.0161,
+      "atr_ratio": 0,
+      "price": 0.6994,
+      "volume_ratio": 1.19
+    },
+    {
+      "time": "2026-07-08T17:38:13.870447+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "SHORT",
+      "entry": 1.07317056,
+      "stop": 1.1217,
+      "take": 0.5876,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 25.3,
+      "atr": 0.0194,
+      "atr_ratio": 0,
+      "price": 1.0736,
+      "volume_ratio": 1.51
     }
   ],
   "equity_curve": [
@@ -1022,5 +1054,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-07-08T14:11:57.178639+00:00"
+  "last_run": "2026-07-08T17:38:13.870447+00:00"
 }
