@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "balance": 982.9709822456019,
+  "balance": 981.1806842594848,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
   "positions": [
@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04568661143470966,
       "max_bars": 48,
-      "bars_held": 14,
+      "bars_held": 15,
       "entry_time": "2026-07-14T17:15:57.125069+00:00",
       "signal_bar_time": "2026-07-14 12:00:00+00:00",
       "entry_bar_time": "2026-07-14 16:00:00+00:00",
@@ -32,27 +32,26 @@
     {
       "strategy": "XRP macd_momentum/4h",
       "symbol": "XRPUSDT",
-      "side": "LONG",
-      "entry": 1.10514188,
-      "raw_entry": 1.1047,
-      "stop": 1.0682,
-      "take": 1.4744,
+      "side": "SHORT",
+      "entry": 1.0865652,
+      "raw_entry": 1.087,
+      "stop": 1.1255,
+      "take": 0.6971,
       "alloc": 300.0,
-      "notional": 89.75,
+      "notional": 83.72,
       "risk_dollar": 3.0,
       "fee_rate": 0.0005,
       "slippage_rate": 0.0004,
-      "stop_pct": 0.033427273609430014,
+      "stop_pct": 0.035832916423239075,
       "max_bars": 144,
-      "bars_held": 14,
-      "entry_time": "2026-07-14T17:15:57.125069+00:00",
-      "signal_bar_time": "2026-07-14 12:00:00+00:00",
-      "entry_bar_time": "2026-07-14 16:00:00+00:00",
+      "bars_held": 0,
+      "entry_time": "2026-07-17T02:44:24.506446+00:00",
+      "signal_bar_time": "2026-07-16 20:00:00+00:00",
+      "entry_bar_time": "2026-07-17 00:00:00+00:00",
       "entry_regime": "low_vol",
-      "entry_adx": 28.1,
-      "entry_atr": 0.0148,
-      "entry_vol_ratio": 3.45,
-      "fills_seen": []
+      "entry_adx": 21.5,
+      "entry_atr": 0.0156,
+      "entry_vol_ratio": 0.65
     }
   ],
   "closed_trades": [
@@ -343,6 +342,30 @@
       "notional": 87.3,
       "risk_dollar": 4.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.7455359075605593, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-07-17T02:44:26.891901+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.10514188,
+      "exit": 1.08420208,
+      "exit_reason": "stop_loss",
+      "pnl": -1.79,
+      "gross_pnl": -1.7,
+      "fee": 0.0897,
+      "slippage_cost": 0.0718,
+      "pnl_pct": -1.99,
+      "bars_held": 15,
+      "entry_time": "2026-07-14T17:15:57.125069+00:00",
+      "regime": "low_vol",
+      "adx_entry": 28.1,
+      "atr_entry": 0.0148,
+      "volume_ratio": 3.45,
+      "alloc": 300.0,
+      "notional": 89.75,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 1.0846359371781282, \"reason\": \"stop_loss\", \"bar\": 499}]"
     }
   ],
   "signal_log": [
@@ -1545,6 +1568,38 @@
       "atr_ratio": 0,
       "price": 0.7486,
       "volume_ratio": 0.6
+    },
+    {
+      "time": "2026-07-17T02:44:24.506446+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.73860444,
+      "stop": 0.7737,
+      "take": 0.3879,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 16.8,
+      "atr": 0.014,
+      "atr_ratio": 0,
+      "price": 0.739,
+      "volume_ratio": 0.7
+    },
+    {
+      "time": "2026-07-17T02:44:24.506446+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "SHORT",
+      "entry": 1.0865652,
+      "stop": 1.1255,
+      "take": 0.6971,
+      "taken": true,
+      "regime": "low_vol",
+      "adx": 21.5,
+      "atr": 0.0156,
+      "atr_ratio": 0,
+      "price": 1.0871,
+      "volume_ratio": 0.65
     }
   ],
   "equity_curve": [
@@ -1667,7 +1722,12 @@
       "date": "2026-07-16",
       "balance": 983.32,
       "positions": 2
+    },
+    {
+      "date": "2026-07-17",
+      "balance": 978.88,
+      "positions": 1
     }
   ],
-  "last_run": "2026-07-16T21:00:40.426850+00:00"
+  "last_run": "2026-07-17T02:44:24.506446+00:00"
 }
