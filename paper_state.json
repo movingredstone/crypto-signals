@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "balance": 969.0564793153562,
+  "balance": 967.6025308329109,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
   "positions": [
@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.041126541380033056,
       "max_bars": 48,
-      "bars_held": 12,
+      "bars_held": 13,
       "entry_time": "2026-07-23T17:23:36.264223+00:00",
       "signal_bar_time": "2026-07-23 12:00:00+00:00",
       "entry_bar_time": "2026-07-23 16:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03192023753820213,
       "max_bars": 144,
-      "bars_held": 11,
+      "bars_held": 12,
       "entry_time": "2026-07-23T21:05:52.619308+00:00",
       "signal_bar_time": "2026-07-23 16:00:00+00:00",
       "entry_bar_time": "2026-07-23 20:00:00+00:00",
@@ -52,31 +52,6 @@
       "entry_adx": 27.3,
       "entry_atr": 0.0141,
       "entry_vol_ratio": 0.87,
-      "fills_seen": []
-    },
-    {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "SHORT",
-      "entry": 0.0692223,
-      "raw_entry": 0.06925,
-      "stop": 0.0739,
-      "take": 0.0505,
-      "alloc": 300.0,
-      "notional": 44.4,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.0675750444582164,
-      "max_bars": 48,
-      "bars_held": 11,
-      "entry_time": "2026-07-23T21:05:52.619308+00:00",
-      "signal_bar_time": "2026-07-23 16:00:00+00:00",
-      "entry_bar_time": "2026-07-23 20:00:00+00:00",
-      "entry_regime": "high_vol",
-      "entry_adx": 15.1,
-      "entry_atr": 0.0011,
-      "entry_vol_ratio": 1.15,
       "fills_seen": []
     }
   ],
@@ -512,6 +487,30 @@
       "notional": 104.25,
       "risk_dollar": 4.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.7435152147621455, \"reason\": \"stop_loss\", \"bar\": 498}]"
+    },
+    {
+      "exit_time": "2026-07-25T16:59:17.448370+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.0692223,
+      "exit": 0.07141987,
+      "exit_reason": "stop_loss",
+      "pnl": -1.45,
+      "gross_pnl": -1.41,
+      "fee": 0.0444,
+      "slippage_cost": 0.0355,
+      "pnl_pct": -3.27,
+      "bars_held": 12,
+      "entry_time": "2026-07-23T21:05:52.619308+00:00",
+      "regime": "high_vol",
+      "adx_entry": 15.1,
+      "atr_entry": 0.0011,
+      "volume_ratio": 1.15,
+      "alloc": 300.0,
+      "notional": 44.4,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.07139131527380882, \"reason\": \"stop_loss\", \"bar\": 498}]"
     }
   ],
   "signal_log": [
@@ -2411,5 +2410,5 @@
       "positions": 3
     }
   ],
-  "last_run": "2026-07-25T13:35:58.985751+00:00"
+  "last_run": "2026-07-25T16:59:14.476430+00:00"
 }
