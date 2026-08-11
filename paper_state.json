@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.02786062957397977,
       "max_bars": 144,
-      "bars_held": 29,
+      "bars_held": 30,
       "entry_time": "2026-08-06T10:40:14.799351+00:00",
       "signal_bar_time": "2026-08-06 04:00:00+00:00",
       "entry_bar_time": "2026-08-06 08:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03300628200552105,
       "max_bars": 48,
-      "bars_held": 7,
+      "bars_held": 8,
       "entry_time": "2026-08-10T01:52:40.841007+00:00",
       "signal_bar_time": "2026-08-09 20:00:00+00:00",
       "entry_bar_time": "2026-08-10 00:00:00+00:00",
@@ -69,14 +69,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.03665077954033755,
       "max_bars": 48,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-08-11T01:48:56.603754+00:00",
       "signal_bar_time": "2026-08-10 20:00:00+00:00",
       "entry_bar_time": "2026-08-11 00:00:00+00:00",
       "entry_regime": "low_vol",
       "entry_adx": 17.8,
       "entry_atr": 0.01,
-      "entry_vol_ratio": 0.87
+      "entry_vol_ratio": 0.87,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -3281,6 +3282,38 @@
       "atr_ratio": 0,
       "price": 0.0697,
       "volume_ratio": 0.72
+    },
+    {
+      "time": "2026-08-11T05:09:55.554015+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "SHORT",
+      "entry": 0.687225,
+      "stop": 0.7118,
+      "take": 0.4417,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 17.5,
+      "atr": 0.0098,
+      "atr_ratio": 0,
+      "price": 0.6876,
+      "volume_ratio": 0.4
+    },
+    {
+      "time": "2026-08-11T05:09:55.554015+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "SHORT",
+      "entry": 1.01429412,
+      "stop": 1.0423,
+      "take": 0.734,
+      "taken": false,
+      "regime": "low_vol",
+      "adx": 24.5,
+      "atr": 0.0112,
+      "atr_ratio": 0,
+      "price": 1.0147,
+      "volume_ratio": 1.1
     }
   ],
   "equity_curve": [
@@ -3535,5 +3568,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-08-11T01:48:56.603754+00:00"
+  "last_run": "2026-08-11T05:09:55.554015+00:00"
 }
