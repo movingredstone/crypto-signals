@@ -1,33 +1,56 @@
 {
   "version": 3,
-  "balance": 969.901701779912,
+  "balance": 968.9066035032382,
   "initial_balance": 1000.0,
   "peak_balance": 1000.0,
   "positions": [
     {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "SHORT",
-      "entry": 0.06966212,
-      "raw_entry": 0.06969,
-      "stop": 0.0732,
-      "take": 0.0557,
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.06822712,
+      "raw_entry": 1.0678,
+      "stop": 1.0377,
+      "take": 1.3736,
       "alloc": 300.0,
-      "notional": 59.07,
+      "notional": 104.98,
       "risk_dollar": 3.0,
       "fee_rate": 0.0005,
       "slippage_rate": 0.0004,
-      "stop_pct": 0.05078628098025164,
+      "stop_pct": 0.028577368453255435,
+      "max_bars": 144,
+      "bars_held": 0,
+      "entry_time": "2026-08-19T16:32:21.676644+00:00",
+      "signal_bar_time": "2026-08-19 12:00:00+00:00",
+      "entry_bar_time": "2026-08-19 16:00:00+00:00",
+      "entry_regime": "high_vol",
+      "entry_adx": 29.7,
+      "entry_atr": 0.0122,
+      "entry_vol_ratio": 5.55
+    },
+    {
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.072539,
+      "raw_entry": 0.07251,
+      "stop": 0.069,
+      "take": 0.0865,
+      "alloc": 300.0,
+      "notional": 61.49,
+      "risk_dollar": 3.0,
+      "fee_rate": 0.0005,
+      "slippage_rate": 0.0004,
+      "stop_pct": 0.04878754876687024,
       "max_bars": 48,
-      "bars_held": 40,
-      "entry_time": "2026-08-13T02:03:23.638656+00:00",
-      "signal_bar_time": "2026-08-12 20:00:00+00:00",
-      "entry_bar_time": "2026-08-13 00:00:00+00:00",
+      "bars_held": 0,
+      "entry_time": "2026-08-19T16:32:21.676644+00:00",
+      "signal_bar_time": "2026-08-19 12:00:00+00:00",
+      "entry_bar_time": "2026-08-19 16:00:00+00:00",
       "entry_regime": "low_vol",
-      "entry_adx": 19.9,
-      "entry_atr": 0.0009,
-      "entry_vol_ratio": 2.04,
-      "fills_seen": []
+      "entry_adx": 24.4,
+      "entry_atr": 0.0007,
+      "entry_vol_ratio": 5.46
     }
   ],
   "closed_trades": [
@@ -798,6 +821,30 @@
       "notional": 107.68,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 1.011797843113317, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-08-19T16:32:25.078081+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.06966212,
+      "exit": 0.07076599,
+      "exit_reason": "stop_loss",
+      "pnl": -1.0,
+      "gross_pnl": -0.94,
+      "fee": 0.0591,
+      "slippage_cost": 0.0473,
+      "pnl_pct": -1.68,
+      "bars_held": 41,
+      "entry_time": "2026-08-13T02:03:23.638656+00:00",
+      "regime": "low_vol",
+      "adx_entry": 19.9,
+      "atr_entry": 0.0009,
+      "volume_ratio": 2.04,
+      "alloc": 300.0,
+      "notional": 59.07,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.0707376968381944, \"reason\": \"stop_loss\", \"bar\": 498}]"
     }
   ],
   "signal_log": [
@@ -3824,6 +3871,38 @@
       "atr_ratio": 0,
       "price": 0.0699,
       "volume_ratio": 1.26
+    },
+    {
+      "time": "2026-08-19T16:32:21.676644+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.06822712,
+      "stop": 1.0377,
+      "take": 1.3736,
+      "taken": true,
+      "regime": "high_vol",
+      "adx": 29.7,
+      "atr": 0.0122,
+      "atr_ratio": 0,
+      "price": 1.0678,
+      "volume_ratio": 5.55
+    },
+    {
+      "time": "2026-08-19T16:32:21.676644+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.072539,
+      "stop": 0.069,
+      "take": 0.0865,
+      "taken": true,
+      "regime": "low_vol",
+      "adx": 24.4,
+      "atr": 0.0007,
+      "atr_ratio": 0,
+      "price": 0.0725,
+      "volume_ratio": 5.46
     }
   ],
   "equity_curve": [
@@ -4118,5 +4197,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-08-19T12:48:33.953986+00:00"
+  "last_run": "2026-08-19T16:32:21.676644+00:00"
 }
