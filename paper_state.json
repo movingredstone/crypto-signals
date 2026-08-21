@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04878754876687024,
       "max_bars": 48,
-      "bars_held": 8,
+      "bars_held": 9,
       "entry_time": "2026-08-19T16:32:21.676644+00:00",
       "signal_bar_time": "2026-08-19 12:00:00+00:00",
       "entry_bar_time": "2026-08-19 16:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04754811956237337,
       "max_bars": 48,
-      "bars_held": 6,
+      "bars_held": 7,
       "entry_time": "2026-08-20T01:16:53.022090+00:00",
       "signal_bar_time": "2026-08-19 20:00:00+00:00",
       "entry_bar_time": "2026-08-20 00:00:00+00:00",
@@ -69,14 +69,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.06901893575578541,
       "max_bars": 144,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-08-20T20:29:24.729964+00:00",
       "signal_bar_time": "2026-08-20 16:00:00+00:00",
       "entry_bar_time": "2026-08-20 20:00:00+00:00",
       "entry_regime": "high_vol",
       "entry_adx": 50.6,
       "entry_atr": 0.034,
-      "entry_vol_ratio": 4.63
+      "entry_vol_ratio": 4.63,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -4257,6 +4258,38 @@
       "atr_ratio": 0,
       "price": 0.0797,
       "volume_ratio": 2.84
+    },
+    {
+      "time": "2026-08-21T01:20:41.572387+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.26860724,
+      "stop": 1.1816,
+      "take": 2.139,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 53.6,
+      "atr": 0.0348,
+      "atr_ratio": 0,
+      "price": 1.2681,
+      "volume_ratio": 1.55
+    },
+    {
+      "time": "2026-08-21T01:20:41.572387+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.08049218,
+      "stop": 0.0696,
+      "take": 0.124,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 47.4,
+      "atr": 0.0015,
+      "atr_ratio": 0,
+      "price": 0.0805,
+      "volume_ratio": 0.98
     }
   ],
   "equity_curve": [
@@ -4554,7 +4587,12 @@
       "date": "2026-08-20",
       "balance": 974.99,
       "positions": 2
+    },
+    {
+      "date": "2026-08-21",
+      "balance": 999.46,
+      "positions": 3
     }
   ],
-  "last_run": "2026-08-20T20:29:24.729964+00:00"
+  "last_run": "2026-08-21T01:20:41.572387+00:00"
 }
