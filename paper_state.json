@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04878754876687024,
       "max_bars": 48,
-      "bars_held": 9,
+      "bars_held": 10,
       "entry_time": "2026-08-19T16:32:21.676644+00:00",
       "signal_bar_time": "2026-08-19 12:00:00+00:00",
       "entry_bar_time": "2026-08-19 16:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.04754811956237337,
       "max_bars": 48,
-      "bars_held": 7,
+      "bars_held": 8,
       "entry_time": "2026-08-20T01:16:53.022090+00:00",
       "signal_bar_time": "2026-08-19 20:00:00+00:00",
       "entry_bar_time": "2026-08-20 00:00:00+00:00",
@@ -69,7 +69,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.06901893575578541,
       "max_bars": 144,
-      "bars_held": 2,
+      "bars_held": 3,
       "entry_time": "2026-08-20T20:29:24.729964+00:00",
       "signal_bar_time": "2026-08-20 16:00:00+00:00",
       "entry_bar_time": "2026-08-20 20:00:00+00:00",
@@ -4290,6 +4290,54 @@
       "atr_ratio": 0,
       "price": 0.0805,
       "volume_ratio": 0.98
+    },
+    {
+      "time": "2026-08-21T04:38:38.295083+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 0.74549808,
+      "stop": 0.7033,
+      "take": 1.1673,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 43.0,
+      "atr": 0.0169,
+      "atr_ratio": 0,
+      "price": 0.7452,
+      "volume_ratio": 1.23
+    },
+    {
+      "time": "2026-08-21T04:38:38.295083+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.30932352,
+      "stop": 1.2177,
+      "take": 2.2258,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 56.5,
+      "atr": 0.0367,
+      "atr_ratio": 0,
+      "price": 1.3088,
+      "volume_ratio": 1.63
+    },
+    {
+      "time": "2026-08-21T04:38:38.295083+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.08181271,
+      "stop": 0.0696,
+      "take": 0.1306,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 50.1,
+      "atr": 0.0017,
+      "atr_ratio": 0,
+      "price": 0.0818,
+      "volume_ratio": 1.88
     }
   ],
   "equity_curve": [
@@ -4594,5 +4642,5 @@
       "positions": 3
     }
   ],
-  "last_run": "2026-08-21T01:20:41.572387+00:00"
+  "last_run": "2026-08-21T04:38:38.295083+00:00"
 }
