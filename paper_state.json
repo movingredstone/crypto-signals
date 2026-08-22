@@ -19,14 +19,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.12332036107414047,
       "max_bars": 144,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-08-22T08:31:21.772135+00:00",
       "signal_bar_time": "2026-08-22 04:00:00+00:00",
       "entry_bar_time": "2026-08-22 08:00:00+00:00",
       "entry_regime": "high_vol",
       "entry_adx": 72.5,
       "entry_atr": 0.0772,
-      "entry_vol_ratio": 3.47
+      "entry_vol_ratio": 3.47,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -4900,5 +4901,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-08-22T08:31:21.772135+00:00"
+  "last_run": "2026-08-22T12:39:53.257653+00:00"
 }
