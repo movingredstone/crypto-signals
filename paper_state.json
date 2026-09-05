@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.06396576110238733,
       "max_bars": 48,
-      "bars_held": 11,
+      "bars_held": 13,
       "entry_time": "2026-09-03T08:38:35.680538+00:00",
       "signal_bar_time": "2026-09-03 04:00:00+00:00",
       "entry_bar_time": "2026-09-03 08:00:00+00:00",
@@ -5040,6 +5040,22 @@
       "atr_ratio": 0,
       "price": 0.0878,
       "volume_ratio": 1.42
+    },
+    {
+      "time": "2026-09-05T08:08:15.678180+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 0.79371736,
+      "stop": 0.7429,
+      "take": 1.3015,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 18.1,
+      "atr": 0.0203,
+      "atr_ratio": 0,
+      "price": 0.7935,
+      "volume_ratio": 1.22
     }
   ],
   "equity_curve": [
@@ -5419,5 +5435,5 @@
       "positions": 1
     }
   ],
-  "last_run": "2026-09-05T03:23:44.871674+00:00"
+  "last_run": "2026-09-05T08:08:15.678180+00:00"
 }
