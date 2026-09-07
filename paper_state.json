@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.06396576110238733,
       "max_bars": 48,
-      "bars_held": 22,
+      "bars_held": 23,
       "entry_time": "2026-09-03T08:38:35.680538+00:00",
       "signal_bar_time": "2026-09-03 04:00:00+00:00",
       "entry_bar_time": "2026-09-03 08:00:00+00:00",
@@ -28,6 +28,30 @@
       "entry_atr": 0.0197,
       "entry_vol_ratio": 1.4,
       "fills_seen": []
+    },
+    {
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.09095637,
+      "raw_entry": 0.09092,
+      "stop": 0.0831,
+      "take": 0.1223,
+      "alloc": 300.0,
+      "notional": 34.73,
+      "risk_dollar": 3.0,
+      "fee_rate": 0.0005,
+      "slippage_rate": 0.0004,
+      "stop_pct": 0.08637514887632392,
+      "max_bars": 48,
+      "bars_held": 0,
+      "entry_time": "2026-09-07T03:23:10.681138+00:00",
+      "signal_bar_time": "2026-09-06 20:00:00+00:00",
+      "entry_bar_time": "2026-09-07 00:00:00+00:00",
+      "entry_regime": "high_vol",
+      "entry_adx": 30.0,
+      "entry_atr": 0.002,
+      "entry_vol_ratio": 0.56
     }
   ],
   "closed_trades": [
@@ -5224,6 +5248,38 @@
       "atr_ratio": 0,
       "price": 0.8047,
       "volume_ratio": 0.73
+    },
+    {
+      "time": "2026-09-07T03:23:10.681138+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 0.81222476,
+      "stop": 0.7629,
+      "take": 1.3051,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 22.9,
+      "atr": 0.0197,
+      "atr_ratio": 0,
+      "price": 0.8118,
+      "volume_ratio": 1.1
+    },
+    {
+      "time": "2026-09-07T03:23:10.681138+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.09095637,
+      "stop": 0.0831,
+      "take": 0.1223,
+      "taken": true,
+      "regime": "high_vol",
+      "adx": 30.0,
+      "atr": 0.002,
+      "atr_ratio": 0,
+      "price": 0.0909,
+      "volume_ratio": 0.56
     }
   ],
   "equity_curve": [
@@ -5606,7 +5662,12 @@
       "date": "2026-09-06",
       "balance": 1015.56,
       "positions": 2
+    },
+    {
+      "date": "2026-09-07",
+      "balance": 1014.7,
+      "positions": 1
     }
   ],
-  "last_run": "2026-09-06T21:59:01.922681+00:00"
+  "last_run": "2026-09-07T03:23:10.681138+00:00"
 }
