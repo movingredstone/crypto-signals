@@ -1,34 +1,9 @@
 {
   "version": 3,
-  "balance": 1010.7147901900825,
+  "balance": 1008.4250611549497,
   "initial_balance": 1000.0,
   "peak_balance": 1019.4972742496087,
   "positions": [
-    {
-      "strategy": "XRP macd_momentum/4h",
-      "symbol": "XRPUSDT",
-      "side": "LONG",
-      "entry": 1.41776688,
-      "raw_entry": 1.4172,
-      "stop": 1.3571,
-      "take": 2.0242,
-      "alloc": 300.0,
-      "notional": 70.11,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.04279044803190782,
-      "max_bars": 144,
-      "bars_held": 9,
-      "entry_time": "2026-09-09T03:33:38.359472+00:00",
-      "signal_bar_time": "2026-09-08 20:00:00+00:00",
-      "entry_bar_time": "2026-09-09 00:00:00+00:00",
-      "entry_regime": "high_vol",
-      "entry_adx": 15.3,
-      "entry_atr": 0.0243,
-      "entry_vol_ratio": 0.97,
-      "fills_seen": []
-    },
     {
       "strategy": "DOGE macd_momentum/4h",
       "symbol": "DOGEUSDT",
@@ -44,14 +19,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.07717369314451032,
       "max_bars": 48,
-      "bars_held": 0,
+      "bars_held": 2,
       "entry_time": "2026-09-10T08:42:37.992954+00:00",
       "signal_bar_time": "2026-09-10 04:00:00+00:00",
       "entry_bar_time": "2026-09-10 08:00:00+00:00",
       "entry_regime": "high_vol",
       "entry_adx": 28.3,
       "entry_atr": 0.0019,
-      "entry_vol_ratio": 0.72
+      "entry_vol_ratio": 0.72,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -1182,6 +1158,30 @@
       "notional": 34.73,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.08595783228745942, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-09-10T15:58:21.355582+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "LONG",
+      "entry": 1.41776688,
+      "exit": 1.37288167,
+      "exit_reason": "stop_loss",
+      "pnl": -2.29,
+      "gross_pnl": -2.22,
+      "fee": 0.0701,
+      "slippage_cost": 0.0561,
+      "pnl_pct": -3.27,
+      "bars_held": 10,
+      "entry_time": "2026-09-09T03:33:38.359472+00:00",
+      "regime": "high_vol",
+      "adx_entry": 15.3,
+      "atr_entry": 0.0243,
+      "volume_ratio": 0.97,
+      "alloc": 300.0,
+      "notional": 70.11,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 1.3734310384055386, \"reason\": \"stop_loss\", \"bar\": 498}]"
     }
   ],
   "signal_log": [
@@ -5408,6 +5408,22 @@
       "atr_ratio": 0,
       "price": 0.0853,
       "volume_ratio": 0.72
+    },
+    {
+      "time": "2026-09-10T15:58:19.309065+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.08508595,
+      "stop": 0.0919,
+      "take": 0.0579,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 27.8,
+      "atr": 0.0019,
+      "atr_ratio": 0,
+      "price": 0.0851,
+      "volume_ratio": 0.87
     }
   ],
   "equity_curve": [
@@ -5812,5 +5828,5 @@
       "positions": 1
     }
   ],
-  "last_run": "2026-09-10T08:42:37.992954+00:00"
+  "last_run": "2026-09-10T15:58:19.309065+00:00"
 }
