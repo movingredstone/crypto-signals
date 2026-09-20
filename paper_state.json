@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "balance": 1000.3166998401365,
+  "balance": 1001.0046224277504,
   "initial_balance": 1000.0,
   "peak_balance": 1019.4972742496087,
   "positions": [
@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.05420268153361879,
       "max_bars": 48,
-      "bars_held": 12,
+      "bars_held": 13,
       "entry_time": "2026-09-18T03:39:04.002527+00:00",
       "signal_bar_time": "2026-09-17 20:00:00+00:00",
       "entry_bar_time": "2026-09-18 00:00:00+00:00",
@@ -27,31 +27,6 @@
       "entry_adx": 23.5,
       "entry_atr": 0.0161,
       "entry_vol_ratio": 0.78,
-      "fills_seen": []
-    },
-    {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "LONG",
-      "entry": 0.08450379,
-      "raw_entry": 0.08447,
-      "stop": 0.0783,
-      "take": 0.1093,
-      "alloc": 300.0,
-      "notional": 40.86,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.07341434035088841,
-      "max_bars": 48,
-      "bars_held": 10,
-      "entry_time": "2026-09-18T08:51:35.207269+00:00",
-      "signal_bar_time": "2026-09-18 04:00:00+00:00",
-      "entry_bar_time": "2026-09-18 08:00:00+00:00",
-      "entry_regime": "high_vol",
-      "entry_adx": 23.5,
-      "entry_atr": 0.0015,
-      "entry_vol_ratio": 1.48,
       "fills_seen": []
     },
     {
@@ -69,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.06085724350486431,
       "max_bars": 144,
-      "bars_held": 7,
+      "bars_held": 8,
       "entry_time": "2026-09-18T22:21:40.226154+00:00",
       "signal_bar_time": "2026-09-18 16:00:00+00:00",
       "entry_bar_time": "2026-09-18 20:00:00+00:00",
@@ -1400,6 +1375,30 @@
       "notional": 38.79,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 1.3623690463281422, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-09-20T03:51:45.575959+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.08450379,
+      "exit": 0.08601101,
+      "exit_reason": "stop_loss",
+      "pnl": 0.69,
+      "gross_pnl": 0.73,
+      "fee": 0.0409,
+      "slippage_cost": 0.0327,
+      "pnl_pct": 1.68,
+      "bars_held": 11,
+      "entry_time": "2026-09-18T08:51:35.207269+00:00",
+      "regime": "high_vol",
+      "adx_entry": 23.5,
+      "atr_entry": 0.0015,
+      "volume_ratio": 1.48,
+      "alloc": 300.0,
+      "notional": 40.86,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.08604542527092532, \"reason\": \"stop_loss\", \"bar\": 499}]"
     }
   ],
   "signal_log": [
@@ -6745,7 +6744,12 @@
       "date": "2026-09-19",
       "balance": 1009.91,
       "positions": 3
+    },
+    {
+      "date": "2026-09-20",
+      "balance": 1008.45,
+      "positions": 2
     }
   ],
-  "last_run": "2026-09-19T22:11:30.321490+00:00"
+  "last_run": "2026-09-20T03:51:43.379363+00:00"
 }
