@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.07116125956848467,
       "max_bars": 144,
-      "bars_held": 34,
+      "bars_held": 36,
       "entry_time": "2026-09-25T16:45:14.702616+00:00",
       "signal_bar_time": "2026-09-25 12:00:00+00:00",
       "entry_bar_time": "2026-09-25 16:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.0455659340263881,
       "max_bars": 48,
-      "bars_held": 5,
+      "bars_held": 7,
       "entry_time": "2026-09-30T14:41:36.066872+00:00",
       "signal_bar_time": "2026-09-30 08:00:00+00:00",
       "entry_bar_time": "2026-09-30 12:00:00+00:00",
@@ -6905,6 +6905,22 @@
       "atr_ratio": 0,
       "price": 0.0958,
       "volume_ratio": 0.52
+    },
+    {
+      "time": "2026-10-01T15:10:28.213968+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.09500799,
+      "stop": 0.0915,
+      "take": 0.1089,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 16.5,
+      "atr": 0.0021,
+      "atr_ratio": 0,
+      "price": 0.095,
+      "volume_ratio": 0.76
     }
   ],
   "equity_curve": [
@@ -7414,5 +7430,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-10-01T04:39:05.447060+00:00"
+  "last_run": "2026-10-01T15:10:28.213968+00:00"
 }
