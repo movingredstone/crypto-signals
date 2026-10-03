@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.09190896709152997,
       "max_bars": 48,
-      "bars_held": 5,
+      "bars_held": 7,
       "entry_time": "2026-10-02T04:30:59.899419+00:00",
       "signal_bar_time": "2026-10-02 00:00:00+00:00",
       "entry_bar_time": "2026-10-02 04:00:00+00:00",
@@ -44,14 +44,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.07377090408885827,
       "max_bars": 48,
-      "bars_held": 0,
+      "bars_held": 3,
       "entry_time": "2026-10-02T20:24:33.175600+00:00",
       "signal_bar_time": "2026-10-02 16:00:00+00:00",
       "entry_bar_time": "2026-10-02 20:00:00+00:00",
       "entry_regime": "high_vol",
       "entry_adx": 18.8,
       "entry_atr": 0.0023,
-      "entry_vol_ratio": 2.26
+      "entry_vol_ratio": 2.26,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -7608,7 +7609,12 @@
       "date": "2026-10-02",
       "balance": 1016.52,
       "positions": 2
+    },
+    {
+      "date": "2026-10-03",
+      "balance": 1009.64,
+      "positions": 2
     }
   ],
-  "last_run": "2026-10-02T20:24:33.175600+00:00"
+  "last_run": "2026-10-03T04:13:55.550402+00:00"
 }
