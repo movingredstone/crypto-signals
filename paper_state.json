@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "balance": 1011.5317944152882,
+  "balance": 1008.8609203417412,
   "initial_balance": 1000.0,
   "peak_balance": 1019.9614010841125,
   "positions": [
@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.09190896709152997,
       "max_bars": 48,
-      "bars_held": 16,
+      "bars_held": 17,
       "entry_time": "2026-10-02T04:30:59.899419+00:00",
       "signal_bar_time": "2026-10-02 00:00:00+00:00",
       "entry_bar_time": "2026-10-02 04:00:00+00:00",
@@ -27,31 +27,6 @@
       "entry_adx": 21.4,
       "entry_atr": 0.0436,
       "entry_vol_ratio": 0.6,
-      "fills_seen": []
-    },
-    {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "SHORT",
-      "entry": 0.0914534,
-      "raw_entry": 0.09149,
-      "stop": 0.0982,
-      "take": 0.0645,
-      "alloc": 300.0,
-      "notional": 40.67,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.07377090408885827,
-      "max_bars": 48,
-      "bars_held": 12,
-      "entry_time": "2026-10-02T20:24:33.175600+00:00",
-      "signal_bar_time": "2026-10-02 16:00:00+00:00",
-      "entry_bar_time": "2026-10-02 20:00:00+00:00",
-      "entry_regime": "high_vol",
-      "entry_adx": 18.8,
-      "entry_atr": 0.0023,
-      "entry_vol_ratio": 2.26,
       "fills_seen": []
     }
   ],
@@ -1591,6 +1566,30 @@
       "notional": 65.84,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.09201546483203754, \"reason\": \"stop_loss\", \"bar\": 498}]"
+    },
+    {
+      "exit_time": "2026-10-04T22:50:06.681660+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "SHORT",
+      "entry": 0.0914534,
+      "exit": 0.09736786,
+      "exit_reason": "stop_loss",
+      "pnl": -2.67,
+      "gross_pnl": -2.63,
+      "fee": 0.0407,
+      "slippage_cost": 0.0325,
+      "pnl_pct": -6.57,
+      "bars_held": 13,
+      "entry_time": "2026-10-02T20:24:33.175600+00:00",
+      "regime": "high_vol",
+      "adx_entry": 18.8,
+      "atr_entry": 0.0023,
+      "volume_ratio": 2.26,
+      "alloc": 300.0,
+      "notional": 40.67,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.09732892884694481, \"reason\": \"stop_loss\", \"bar\": 499}]"
     }
   ],
   "signal_log": [
@@ -7637,5 +7636,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-10-04T19:16:11.020205+00:00"
+  "last_run": "2026-10-04T22:50:03.743014+00:00"
 }
