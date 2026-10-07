@@ -1,60 +1,9 @@
 {
   "version": 3,
-  "balance": 1008.8609203417412,
+  "balance": 1005.6890337227142,
   "initial_balance": 1000.0,
   "peak_balance": 1019.9614010841125,
-  "positions": [
-    {
-      "strategy": "SUI macd_momentum/4h",
-      "symbol": "SUIUSDT",
-      "side": "LONG",
-      "entry": 1.18567408,
-      "raw_entry": 1.1852,
-      "stop": 1.0767,
-      "take": 2.275,
-      "alloc": 400.0,
-      "notional": 43.52,
-      "risk_dollar": 4.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.09190896709152997,
-      "max_bars": 48,
-      "bars_held": 29,
-      "entry_time": "2026-10-02T04:30:59.899419+00:00",
-      "signal_bar_time": "2026-10-02 00:00:00+00:00",
-      "entry_bar_time": "2026-10-02 04:00:00+00:00",
-      "entry_regime": "high_vol",
-      "entry_adx": 21.4,
-      "entry_atr": 0.0436,
-      "entry_vol_ratio": 0.6,
-      "fills_seen": []
-    },
-    {
-      "strategy": "DOGE macd_momentum/4h",
-      "symbol": "DOGEUSDT",
-      "side": "LONG",
-      "entry": 0.09593836,
-      "raw_entry": 0.0959,
-      "stop": 0.0903,
-      "take": 0.1185,
-      "alloc": 300.0,
-      "notional": 51.05,
-      "risk_dollar": 3.0,
-      "fee_rate": 0.0005,
-      "slippage_rate": 0.0004,
-      "stop_pct": 0.058770652323012346,
-      "max_bars": 48,
-      "bars_held": 11,
-      "entry_time": "2026-10-05T04:33:32.142059+00:00",
-      "signal_bar_time": "2026-10-05 00:00:00+00:00",
-      "entry_bar_time": "2026-10-05 04:00:00+00:00",
-      "entry_regime": "low_vol",
-      "entry_adx": 16.4,
-      "entry_atr": 0.0016,
-      "entry_vol_ratio": 1.07,
-      "fills_seen": []
-    }
-  ],
+  "positions": [],
   "closed_trades": [
     {
       "exit_time": "2026-07-01T17:58:10.552353+00:00",
@@ -1615,6 +1564,54 @@
       "notional": 40.67,
       "risk_dollar": 3.0,
       "fills": "[{\"frac\": 1.0, \"price\": 0.09732892884694481, \"reason\": \"stop_loss\", \"bar\": 499}]"
+    },
+    {
+      "exit_time": "2026-10-07T04:48:16.393653+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 1.18567408,
+      "exit": 1.15320003,
+      "exit_reason": "stop_loss",
+      "pnl": -1.24,
+      "gross_pnl": -1.19,
+      "fee": 0.0435,
+      "slippage_cost": 0.0348,
+      "pnl_pct": -2.84,
+      "bars_held": 31,
+      "entry_time": "2026-10-02T04:30:59.899419+00:00",
+      "regime": "high_vol",
+      "adx_entry": 21.4,
+      "atr_entry": 0.0436,
+      "volume_ratio": 0.6,
+      "alloc": 400.0,
+      "notional": 43.52,
+      "risk_dollar": 4.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 1.1536614912822676, \"reason\": \"stop_loss\", \"bar\": 498}]"
+    },
+    {
+      "exit_time": "2026-10-07T04:48:16.393653+00:00",
+      "strategy": "DOGE macd_momentum/4h",
+      "symbol": "DOGEUSDT",
+      "side": "LONG",
+      "entry": 0.09593836,
+      "exit": 0.0923952,
+      "exit_reason": "stop_loss",
+      "pnl": -1.94,
+      "gross_pnl": -1.89,
+      "fee": 0.051,
+      "slippage_cost": 0.0408,
+      "pnl_pct": -3.79,
+      "bars_held": 13,
+      "entry_time": "2026-10-05T04:33:32.142059+00:00",
+      "regime": "low_vol",
+      "adx_entry": 16.4,
+      "atr_entry": 0.0016,
+      "volume_ratio": 1.07,
+      "alloc": 300.0,
+      "notional": 51.05,
+      "risk_dollar": 3.0,
+      "fills": "[{\"frac\": 1.0, \"price\": 0.09243217030273174, \"reason\": \"stop_loss\", \"bar\": 498}]"
     }
   ],
   "signal_log": [
@@ -7701,7 +7698,12 @@
       "date": "2026-10-06",
       "balance": 1009.42,
       "positions": 2
+    },
+    {
+      "date": "2026-10-07",
+      "balance": 1005.69,
+      "positions": 0
     }
   ],
-  "last_run": "2026-10-06T23:37:51.946049+00:00"
+  "last_run": "2026-10-07T04:48:14.351762+00:00"
 }
