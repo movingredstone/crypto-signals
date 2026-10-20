@@ -3,7 +3,32 @@
   "balance": 998.0132133528003,
   "initial_balance": 1000.0,
   "peak_balance": 1019.9614010841125,
-  "positions": [],
+  "positions": [
+    {
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 1.02360928,
+      "raw_entry": 1.0232,
+      "stop": 0.9562,
+      "take": 1.6973,
+      "alloc": 400.0,
+      "notional": 60.74,
+      "risk_dollar": 4.0,
+      "fee_rate": 0.0005,
+      "slippage_rate": 0.0004,
+      "stop_pct": 0.06585450260865162,
+      "max_bars": 48,
+      "bars_held": 0,
+      "entry_time": "2026-10-20T22:58:33.710991+00:00",
+      "signal_bar_time": "2026-10-20 16:00:00+00:00",
+      "entry_bar_time": "2026-10-20 20:00:00+00:00",
+      "entry_regime": "low_vol",
+      "entry_adx": 28.2,
+      "entry_atr": 0.0269,
+      "entry_vol_ratio": 1.14
+    }
+  ],
   "closed_trades": [
     {
       "exit_time": "2026-07-01T17:58:10.552353+00:00",
@@ -8054,6 +8079,22 @@
       "atr_ratio": 0,
       "price": 0.0764,
       "volume_ratio": 0.91
+    },
+    {
+      "time": "2026-10-20T22:58:33.710991+00:00",
+      "strategy": "SUI macd_momentum/4h",
+      "symbol": "SUIUSDT",
+      "side": "LONG",
+      "entry": 1.02360928,
+      "stop": 0.9562,
+      "take": 1.6973,
+      "taken": true,
+      "regime": "low_vol",
+      "adx": 28.2,
+      "atr": 0.0269,
+      "atr_ratio": 0,
+      "price": 1.0232,
+      "volume_ratio": 1.14
     }
   ],
   "equity_curve": [
@@ -8658,5 +8699,5 @@
       "positions": 2
     }
   ],
-  "last_run": "2026-10-20T16:28:46.261381+00:00"
+  "last_run": "2026-10-20T22:58:33.710991+00:00"
 }
