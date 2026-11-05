@@ -19,14 +19,15 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.0414990714460529,
       "max_bars": 144,
-      "bars_held": 0,
+      "bars_held": 3,
       "entry_time": "2026-11-04T19:27:51.625923+00:00",
       "signal_bar_time": "2026-11-04 12:00:00+00:00",
       "entry_bar_time": "2026-11-04 16:00:00+00:00",
       "entry_regime": "low_vol",
       "entry_adx": 18.0,
       "entry_atr": 0.0219,
-      "entry_vol_ratio": 2.85
+      "entry_vol_ratio": 2.85,
+      "fills_seen": []
     }
   ],
   "closed_trades": [
@@ -9804,7 +9805,12 @@
       "date": "2026-11-04",
       "balance": 987.06,
       "positions": 2
+    },
+    {
+      "date": "2026-11-05",
+      "balance": 984.48,
+      "positions": 1
     }
   ],
-  "last_run": "2026-11-04T19:27:51.625923+00:00"
+  "last_run": "2026-11-05T00:45:31.713711+00:00"
 }
