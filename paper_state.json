@@ -19,7 +19,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.07587552359275486,
       "max_bars": 48,
-      "bars_held": 8,
+      "bars_held": 10,
       "entry_time": "2026-11-05T19:44:15.906699+00:00",
       "signal_bar_time": "2026-11-05 12:00:00+00:00",
       "entry_bar_time": "2026-11-05 16:00:00+00:00",
@@ -44,7 +44,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.09081364946403842,
       "max_bars": 48,
-      "bars_held": 8,
+      "bars_held": 10,
       "entry_time": "2026-11-05T19:44:15.906699+00:00",
       "signal_bar_time": "2026-11-05 12:00:00+00:00",
       "entry_bar_time": "2026-11-05 16:00:00+00:00",
@@ -69,7 +69,7 @@
       "slippage_rate": 0.0004,
       "stop_pct": 0.0546751625358169,
       "max_bars": 144,
-      "bars_held": 6,
+      "bars_held": 8,
       "entry_time": "2026-11-06T00:49:55.738522+00:00",
       "signal_bar_time": "2026-11-05 20:00:00+00:00",
       "entry_bar_time": "2026-11-06 00:00:00+00:00",
@@ -9330,6 +9330,22 @@
       "atr_ratio": 0,
       "price": 1.188,
       "volume_ratio": 1.68
+    },
+    {
+      "time": "2026-11-07T05:45:49.352919+00:00",
+      "strategy": "XRP macd_momentum/4h",
+      "symbol": "XRPUSDT",
+      "side": "SHORT",
+      "entry": 1.15973592,
+      "stop": 1.2228,
+      "take": 0.5296,
+      "taken": false,
+      "regime": "high_vol",
+      "adx": 32.0,
+      "atr": 0.0252,
+      "atr_ratio": 0,
+      "price": 1.1603,
+      "volume_ratio": 1.1
     }
   ],
   "equity_curve": [
@@ -10017,7 +10033,12 @@
       "date": "2026-11-06",
       "balance": 981.7,
       "positions": 2
+    },
+    {
+      "date": "2026-11-07",
+      "balance": 983.15,
+      "positions": 3
     }
   ],
-  "last_run": "2026-11-06T23:58:23.636038+00:00"
+  "last_run": "2026-11-07T05:45:49.352919+00:00"
 }
